@@ -6,6 +6,7 @@ fail closed rather than silently producing a partial patch.
 """
 from pathlib import Path
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
@@ -121,13 +122,14 @@ SETTINGS.write_text(settings, encoding="utf-8")
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")
 for key, value in (
     ("vyra_appearance_title", "VYRA Appearance"),
-    ("vyra_feed_title", "VYRA Home & Feed"),
+    ("vyra_feed_title", "VYRA Home &amp; Feed"),
     ("vyra_player_title", "VYRA Player"),
     ("vyra_shorts_title", "VYRA Shorts"),
 ):
     if f'name="{key}"' not in xml:
         xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)
 YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
+ET.parse(YOUTUBE_STRINGS)
 
 build_script = PATCH_BUILD.read_text(encoding="utf-8")
 metadata_replacements = {

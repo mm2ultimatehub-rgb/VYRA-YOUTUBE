@@ -1,36 +1,45 @@
-# Implementation roadmap
+# VYRA YouTube implementation roadmap
 
-## Milestone 0 — foundation
-- [x] Create project layout and record target versions.
-- [x] Prepare validation workflow and ignore proprietary inputs.
-- [ ] Upload the nine mockups and branding assets to this repository.
+## Milestone 0 — reproducible foundation
+- [x] Create the project structure and pin upstream versions.
+- [x] Keep user APKs, signing material, and generated packages out of Git.
+- [x] Add guarded source overlay and CI validation.
+- [x] Build the first VYRA .mpp bundle successfully.
+- [ ] Add the original nine screen references and final logo/splash source assets to the design folder.
 
-## Milestone 1 — reproduce and fix patch compilation
-- [ ] Validate a clean original YouTube 21.30.216 APK locally.
-- [ ] Run the pinned patcher with the smallest supported patch set.
-- [ ] Reproduce the missing $startup_animation_dark__9 resource error.
-- [ ] Trace the missing resource reference and generated file mapping; add a regression test.
-- [ ] Produce a compiled and signed baseline APK before branding changes.
+## Milestone 1 — VYRA settings shell
+- [x] Rename the YouTube patch settings entry to **VYRA MOD**.
+- [x] Add a dedicated **VYRA Appearance** screen.
+- [x] Move navigation animation and navigation style controls into VYRA Appearance.
+- [x] Expose Glass on/off, opacity, rounded capsule, and size preview (height, width, button spacing).
+- [ ] Verify the screen in the patched app and confirm preferences persist after force-stop/relaunch.
+- [ ] Verify Glass OFF restores the normal YouTube navigation bar.
 
-## Milestone 2 — VYRA settings and navigation
-- [ ] Add VYRA MOD without changing default YouTube appearance.
-- [ ] Wire Liquid Glass enable/disable to the actual navigation renderer.
-- [ ] Add opacity, capsule style, animation, accent color, and reset preferences.
-- [ ] Verify persistence and reversibility.
+## Milestone 2 — complete VYRA appearance
+- [ ] Add VYRA theme mode and accent-color controls with persisted settings.
+- [ ] Add icon/label styling controls only where a real upstream hook exists.
+- [ ] Add animation speed/type controls only where they can be wired to runtime behavior.
+- [ ] Add reset-to-VYRA-defaults action.
+- [ ] Respect Android reduced-motion settings and provide a non-blur fallback.
 
-## Milestone 3 — player and surfaces
-- [ ] Adapt player controls while preserving playback behavior.
-- [ ] Adapt profile/library/search/subscriptions/Shorts where upstream hooks permit.
-- [ ] Verify dark/light/system behavior and accessibility fallbacks.
+## Milestone 3 — screen-by-screen visual layer
+- [ ] Home/feed: black/silver surfaces, restrained dividers, cinematic video cards; preserve feed data and actions.
+- [ ] Player: VYRA-styled controls and panels; preserve playback, captions, quality, speed, and casting.
+- [ ] Shorts: consistent glass controls and overlays; preserve swipe/navigation behavior.
+- [ ] Subscriptions and search: consistent typography, icon weights, and spacing.
+- [ ] Library/profile: V cover/profile card treatment without changing account identity or account flows.
+- [ ] Compare each screen with the user's nine supplied references before marking it complete.
 
 ## Milestone 4 — VYRA identity
-- [ ] Generate launcher icon assets from the supplied glass V mark.
-- [ ] Convert the splash prototype to a native-compatible startup treatment.
-- [ ] Verify cold start, warm start, timing, and no looping.
+- [ ] Integrate the supplied liquid-glass V launcher icon in all Android adaptive-icon densities.
+- [ ] Convert the approved 8-second splash direction to native-compatible Android resources.
+- [ ] Do not ship a video splash if it causes startup delay, looping, or accessibility issues; use a short native animation/fallback.
+- [ ] Reproduce and fix the previous missing drawable reference error (`$startup_animation_dark__9`) with a regression test.
 
-## Milestone 5 — release verification
-- [ ] Build from a clean input APK.
-- [ ] Sign with a user-controlled key (never commit it).
-- [ ] Install and test on Android 16 / API 36.
-- [ ] Verify package, version, launch, feed, playback, navigation, settings, and account flows.
-- [ ] Publish only a verified APK and build metadata.
+## Milestone 5 — APK release verification
+- [ ] Patch only a clean YouTube 21.30.216 APK.
+- [ ] Compile resources without dangling drawable references.
+- [ ] Sign using a user-controlled key stored outside Git.
+- [ ] Install on Android 16 / API 36.
+- [ ] Smoke-test cold start, home, search, Shorts, player, subscriptions, profile, settings, Glass ON/OFF, and account flows.
+- [ ] Publish a signed APK only after all tests pass, with build provenance and checksum.

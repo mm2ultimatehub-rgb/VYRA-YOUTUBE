@@ -6,11 +6,14 @@ fail closed rather than silently producing a partial patch.
 """
 from pathlib import Path
 import sys
+import shutil
 import xml.etree.ElementTree as ET
 
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
 SETTINGS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt"
+VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.webp"
+SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 
@@ -84,6 +87,25 @@ old_title = 'titleKey = "morphe_settings_title"'
 if settings.count(old_title) != 2:
     fail("expected exactly two YouTube root-title references in SettingsPatch.kt")
 settings = settings.replace(old_title, 'titleKey = "vyra_settings_title"')
+# Copy the user-approved glass V mark into the patch resources and use it
+# for the VYRA MOD settings entry.
+if not VYRA_LOGO.is_file():
+    fail(f"missing VYRA logo asset: {VYRA_LOGO}")
+SETTINGS_LOGO.parent.mkdir(parents=True, exist_ok=True)
+shutil.copyfile(VYRA_LOGO, SETTINGS_LOGO)
+
+resource_anchor = """                "morphe_settings_icon_bold_dark.xml",
+                "morphe_settings_screen_00_about.xml","""
+resource_replacement = """                "morphe_settings_icon_bold_dark.xml",
+                "vyra_glass_monogram.webp",
+                "morphe_settings_screen_00_about.xml","""
+if settings.count(resource_anchor) != 1:
+    fail("settings resource list anchor changed")
+settings = settings.replace(resource_anchor, resource_replacement, 1)
+icon_anchor = 'icon = "@drawable/morphe_settings_icon_dynamic"'
+if settings.count(icon_anchor) != 1:
+    fail("expected one VYRA MOD settings icon anchor")
+settings = settings.replace(icon_anchor, 'icon = "@drawable/vyra_glass_monogram"', 1)
 SETTINGS.write_text(settings, encoding="utf-8")
 
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")

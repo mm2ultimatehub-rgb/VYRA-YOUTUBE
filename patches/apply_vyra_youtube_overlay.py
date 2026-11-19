@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
 SETTINGS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt"
+BRANDING = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt"
 VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.webp"
 SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
@@ -21,9 +22,26 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, YOUTUBE_STRINGS, PATCH_BUILD):
+for path in (NAV, SETTINGS, BRANDING, YOUTUBE_STRINGS, PATCH_BUILD):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
+
+# Keep upstream app-name/icon branding, but do not pull in Morphe's Rive/Lottie
+# splash patch yet. On the target 21.30.216 APK, that path is the first suspect
+# for the dangling $startup_animation_dark__9 resource alias. VYRA's native
+# splash will be integrated separately after the APK resource pipeline is stable.
+branding = BRANDING.read_text(encoding="utf-8")
+splash_import = "import app.morphe.patches.youtube.layout.theme.splashAnimationPatch\\n"
+if branding.count(splash_import) != 1:
+    fail("expected one upstream splashAnimationPatch import")
+branding = branding.replace(splash_import, "", 1)
+splash_dependency = "            // Owns the hook that loads the startup animation.\\n            splashAnimationPatch,\\n"
+if branding.count(splash_dependency) != 1:
+    fail("expected one upstream splashAnimationPatch dependency")
+branding = branding.replace(splash_dependency, "", 1)
+if "splashAnimationPatch" in branding:
+    fail("splashAnimationPatch is still referenced by CustomBrandingPatch")
+BRANDING.write_text(branding, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
 old_group = '''        navPreferences += listOf(

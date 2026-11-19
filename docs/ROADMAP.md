@@ -9,10 +9,10 @@
 
 ## Milestone 1 — VYRA settings shell
 - [x] Rename the YouTube patch settings entry to **VYRA MOD**.
-- [x] Add a dedicated **VYRA Appearance** screen.
-- [x] Move navigation animation and navigation style controls into VYRA Appearance.
+- [x] Organize General, Feed, Player, and Shorts categories under VYRA-branded names.
+- [x] Add navigation animation, navigation style, Glass toggle, opacity, rounded capsule, and size preview controls to VYRA Appearance.
 - [x] Expose Glass on/off, opacity, rounded capsule, and size preview (height, width, button spacing).
-- [ ] Verify the screen in the patched app and confirm preferences persist after force-stop/relaunch.
+- [ ] Verify all VYRA category screens in the patched app and confirm preferences persist after force-stop/relaunch.
 - [ ] Verify Glass OFF restores the normal YouTube navigation bar.
 
 ## Milestone 2 — complete VYRA appearance

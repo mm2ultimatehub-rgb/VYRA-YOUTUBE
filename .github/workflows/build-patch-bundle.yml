@@ -53,6 +53,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: vyra-youtube
+      - name: Ensure Maven Central is available for upstream plugin dependencies
+        working-directory: morphe-patches
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('settings.gradle.kts')
+          s = p.read_text()
+          if 'mavenCentral()' not in s:
+              marker = '        google()\n'
+              assert s.count(marker) == 1, 'unexpected pluginManagement repository block'
+              p.write_text(s.replace(marker, marker + '        mavenCentral()\n', 1))
+          PY
       - name: Apply VYRA overlay
         working-directory: morphe-patches
         run: python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py

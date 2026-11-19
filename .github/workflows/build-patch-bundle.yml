@@ -68,10 +68,15 @@ jobs:
           from pathlib import Path
           p = Path('settings.gradle.kts')
           s = p.read_text()
+          marker = '        google()\n'
+          assert s.count(marker) == 1, 'unexpected pluginManagement repository block'
+          additions = ''
+          if 'https://repo1.maven.org/maven2' not in s:
+              additions += '        maven { url = uri("https://repo1.maven.org/maven2") }\n'
           if 'mavenCentral()' not in s:
-              marker = '        google()\n'
-              assert s.count(marker) == 1, 'unexpected pluginManagement repository block'
-              p.write_text(s.replace(marker, marker + '        mavenCentral()\n', 1))
+              additions += '        mavenCentral()\n'
+          if additions:
+              p.write_text(s.replace(marker, marker + additions, 1))
           PY
       - name: Apply VYRA overlay
         working-directory: morphe-patches

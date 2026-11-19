@@ -118,7 +118,7 @@ def move_preference_to_vyra_screen(path: Path, old: str, new: str, imports: tupl
             index = content.find(import_anchor)
             if index < 0:
                 fail(f"could not find preference imports in {path.name}")
-            content = content[:index] + line + "\\n" + content[index:]
+            content = content[:index] + line + "\n" + content[index:]
     path.write_text(content, encoding="utf-8")
 
 move_preference_to_vyra_screen(
@@ -205,7 +205,7 @@ for key, value in (
     ("vyra_feed_title", "VYRA Home & Feed"),
 ):
     if f'name="{key}"' not in xml:
-        xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\\n</resources>', 1)
+        xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)
 YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
 
 build_script = PATCH_BUILD.read_text(encoding="utf-8")

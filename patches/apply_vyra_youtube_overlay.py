@@ -106,6 +106,7 @@ YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
 PLAYER_ICONS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/player/icons/PlayerIconStylePatch.kt"
 SHORTS_ICONS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/shortsicons/ShortsIconStylePatch.kt"
 FEED_CARDS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/feedcards/FeedCardLayoutPatch.kt"
+THEME_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/ThemePatch.kt"
 
 def move_preference_to_vyra_screen(path: Path, old: str, new: str, imports: tuple[str, ...]) -> None:
     content = path.read_text(encoding="utf-8")
@@ -198,11 +199,42 @@ move_preference_to_vyra_screen(
     ),
 )
 
+theme_content = THEME_PATCH.read_text(encoding="utf-8")
+theme_old = """        PreferenceScreen.GENERAL.addPreferences(
+            *colorPreferences,
+            SwitchPreference("morphe_gradient_loading_screen", summary = true)
+        )"""
+theme_new = """        PreferenceScreen.GENERAL.addPreferences(
+            PreferenceScreenPreference(
+                key = "vyra_theme_screen",
+                titleKey = "vyra_theme_title",
+                sorting = Sorting.UNSORTED,
+                preferences = colorPreferences.toMutableSet().apply {
+                    add(SwitchPreference("morphe_gradient_loading_screen", summary = true))
+                }
+            )
+        )"""
+if theme_content.count(theme_old) != 1:
+    fail("theme settings insertion anchor changed")
+theme_content = theme_content.replace(theme_old, theme_new, 1)
+for line in (
+    "import app.morphe.patches.shared.misc.settings.preference.PreferenceScreenPreference",
+    "import app.morphe.patches.shared.misc.settings.preference.PreferenceScreenPreference.Sorting",
+):
+    if line not in theme_content:
+        import_anchor = "import app.morphe.patches.shared.misc.settings.preference."
+        index = theme_content.find(import_anchor)
+        if index < 0:
+            fail("could not find theme preference imports")
+        theme_content = theme_content[:index] + line + "\n" + theme_content[index:]
+THEME_PATCH.write_text(theme_content, encoding="utf-8")
+
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")
 for key, value in (
     ("vyra_player_title", "VYRA Player"),
     ("vyra_shorts_title", "VYRA Shorts"),
     ("vyra_feed_title", "VYRA Home & Feed"),
+    ("vyra_theme_title", "VYRA Theme"),
 ):
     if f'name="{key}"' not in xml:
         xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)

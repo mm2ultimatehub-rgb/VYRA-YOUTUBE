@@ -1,0 +1,26 @@
+name: Validate VYRA project foundation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate repository structure
+        run: |
+          python -m json.tool design/tokens.json > /dev/null
+          test -s README.md
+          test -s docs/ARCHITECTURE.md
+          test -s docs/ROADMAP.md
+          test -s patches/UPSTREAM.md
+          echo 'VYRA foundation checks passed.'

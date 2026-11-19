@@ -43,10 +43,7 @@ old_group = '''        navPreferences += listOf(
         )'''
 new_group = '''        // Keep ordinary navigation controls in General. VYRA appearance controls
         // are registered on their own screen below.
-        navPreferences += listOf(
-            SwitchPreference("morphe_hide_navigation_new_content_dot"),
-            ListPreference("morphe_navigation_bar_style")
-        )'''
+        navPreferences += SwitchPreference("morphe_hide_navigation_new_content_dot")'''
 if source.count(old_group) != 1:
     fail("the pinned NavigationBarPatch preference block changed; refusing a partial edit")
 source = source.replace(old_group, new_group, 1)
@@ -65,6 +62,7 @@ addition = '''        )
                 sorting = Sorting.UNSORTED,
                 preferences = mutableSetOf(
                     SwitchPreference("morphe_navigation_bar_animations", summary = true),
+                    ListPreference("morphe_navigation_bar_style"),
                     SwitchPreference("morphe_navigation_bar_glass", summary = true),
                     NonInteractivePreference(
                         key = "morphe_navigation_bar_glass_opacity",

@@ -42,6 +42,10 @@ jobs:
           grep -q 'titleKey = "vyra_settings_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt
           ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt
+          test ! -e patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/SplashAnimationPatch.kt
+          test ! -e patches/src/main/kotlin/app/morphe/patches/shared/layout/branding/StartupAnimationResourcePatch.kt
+          test ! -e patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/GlowMorpheAnimationPatch.kt
+          ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt
           grep -q 'name = "VYRA YouTube Patches"' patches/build.gradle.kts
           if git diff --quiet; then echo 'No VYRA source changes detected'; exit 1; fi
 

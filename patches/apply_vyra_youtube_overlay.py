@@ -13,6 +13,7 @@ ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
 SETTINGS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt"
 BRANDING = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt"
+SEEKBAR = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt"
 VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.webp"
 SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
@@ -22,7 +23,7 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, YOUTUBE_STRINGS, PATCH_BUILD):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, YOUTUBE_STRINGS, PATCH_BUILD):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -42,6 +43,20 @@ branding = branding.replace(splash_dependency, "", 1)
 if "splashAnimationPatch" in branding:
     fail("splashAnimationPatch is still referenced by CustomBrandingPatch")
 BRANDING.write_text(branding, encoding="utf-8")
+
+# Seekbar color does not need to rewrite YouTube's animated splash resources.
+# Keep the seekbar feature, but remove its incidental splash-patch dependency.
+seekbar = SEEKBAR.read_text(encoding="utf-8")
+if seekbar.count(splash_import) != 1:
+    fail("expected one splashAnimationPatch import in SeekbarColorPatch")
+seekbar = seekbar.replace(splash_import, "", 1)
+seekbar_dependency = "        // Owns the hook that loads the splash screen animation." + chr(10) + "        splashAnimationPatch," + chr(10)
+if seekbar.count(seekbar_dependency) != 1:
+    fail("expected one splashAnimationPatch dependency in SeekbarColorPatch")
+seekbar = seekbar.replace(seekbar_dependency, "", 1)
+if "splashAnimationPatch" in seekbar:
+    fail("splashAnimationPatch is still referenced by SeekbarColorPatch")
+SEEKBAR.write_text(seekbar, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
 old_group = '''        navPreferences += listOf(

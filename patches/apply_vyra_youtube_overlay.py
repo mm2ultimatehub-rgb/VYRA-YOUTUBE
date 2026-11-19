@@ -14,6 +14,9 @@ NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/
 SETTINGS = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt"
 BRANDING = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt"
 SEEKBAR = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt"
+SPLASH_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/SplashAnimationPatch.kt"
+SPLASH_RESOURCES = ROOT / "patches/src/main/kotlin/app/morphe/patches/shared/layout/branding/StartupAnimationResourcePatch.kt"
+GLOW_RESOURCES = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/GlowMorpheAnimationPatch.kt"
 VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.webp"
 SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
@@ -23,7 +26,7 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, YOUTUBE_STRINGS, PATCH_BUILD):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -57,6 +60,11 @@ seekbar = seekbar.replace(seekbar_dependency, "", 1)
 if "splashAnimationPatch" in seekbar:
     fail("splashAnimationPatch is still referenced by SeekbarColorPatch")
 SEEKBAR.write_text(seekbar, encoding="utf-8")
+
+# Exclude the now-unreferenced splash patch definitions from the bundle entirely,
+# so Expert/Simple selection cannot re-enable the unstable legacy splash resource path.
+for path in (SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES):
+    path.unlink()
 
 source = NAV.read_text(encoding="utf-8")
 old_group = '''        navPreferences += listOf(

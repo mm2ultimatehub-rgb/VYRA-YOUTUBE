@@ -33,6 +33,8 @@ jobs:
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
           git diff --check
           grep -q 'key = "vyra_appearance_screen"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
+          grep -q 'ListPreference("morphe_navigation_bar_style")' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
+          grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'titleKey = "vyra_settings_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'name = "VYRA YouTube Patches"' patches/build.gradle.kts
           if git diff --quiet; then echo 'No VYRA source changes detected'; exit 1; fi

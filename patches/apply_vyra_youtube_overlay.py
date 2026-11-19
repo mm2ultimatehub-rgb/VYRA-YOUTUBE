@@ -82,7 +82,8 @@ settings = SETTINGS.read_text(encoding="utf-8")
 old_title = 'titleKey = "morphe_settings_title"'
 if settings.count(old_title) != 2:
     fail("expected exactly two YouTube root-title references in SettingsPatch.kt")
-SETTINGS.write_text(settings.replace(old_title, 'titleKey = "vyra_settings_title"'), encoding="utf-8")
+settings = settings.replace(old_title, 'titleKey = "vyra_settings_title"')
+SETTINGS.write_text(settings, encoding="utf-8")
 
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")
 if 'name="vyra_settings_title"' not in xml:
@@ -125,7 +126,7 @@ for key, value in (
     ("vyra_shorts_title", "VYRA Shorts"),
 ):
     if f'name="{key}"' not in xml:
-        xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\\n</resources>', 1)
+        xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)
 YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
 
 build_script = PATCH_BUILD.read_text(encoding="utf-8")

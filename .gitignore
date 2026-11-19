@@ -1,0 +1,17 @@
+input/*.apk
+input/*.apks
+input/*.xapk
+output/*
+*.apk
+*.aab
+*.apks
+*.mpp
+*.jks
+*.keystore
+.env
+.env.*
+.gradle/
+build/
+.idea/
+__pycache__/
+*.pyc

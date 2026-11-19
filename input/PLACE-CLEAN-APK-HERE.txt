@@ -1,0 +1,2 @@
+Place a clean, unmodified YouTube 21.30.216 APK here locally as youtube-original-21.30.216.apk.
+APK files are ignored by Git and must never be committed.

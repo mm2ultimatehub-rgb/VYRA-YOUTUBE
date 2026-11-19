@@ -12,7 +12,9 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 ## Current implementation
 - VYRA patch overlay is applied to pinned Morphe Patches source.
 - Root settings branding is renamed to VYRA MOD.
-- A VYRA Appearance sub-screen exposes the upstream navigation animation, navigation style, glass toggle, opacity, rounded capsule, and live size/width/spacing preview controls.
+- The VYRA MOD root organizes the existing General, Feed, Player, and Shorts settings categories as **VYRA Appearance**, **VYRA Home & Feed**, **VYRA Player**, and **VYRA Shorts**.
+- VYRA Appearance exposes the upstream navigation animation, navigation style, glass toggle, opacity, rounded capsule, and live size/width/spacing preview controls.
+- VYRA Player, Home & Feed, and Shorts retain their upstream working controls (including player/Shorts icon styles and feed-card layout).
 - The upstream Glass renderer remains responsible for drawing and measuring the capsule; this project does not pretend to replace that runtime.
 - GitHub Actions can build the .mpp patch bundle. An .mpp is **not** an installable APK.
 

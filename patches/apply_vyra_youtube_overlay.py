@@ -61,9 +61,9 @@ if "splashAnimationPatch" in seekbar:
     fail("splashAnimationPatch is still referenced by SeekbarColorPatch")
 SEEKBAR.write_text(seekbar, encoding="utf-8")
 
-# Exclude the now-unreferenced splash patch definitions from the bundle entirely,
-# so Expert/Simple selection cannot re-enable the unstable legacy splash resource path.
-for path in (SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES):
+# Exclude only YouTube-specific splash patch definitions. The shared startup resource
+# patch must remain because YouTube Music branding still depends on it at compile time.
+for path in (SPLASH_PATCH, GLOW_RESOURCES):
     path.unlink()
 
 source = NAV.read_text(encoding="utf-8")

@@ -1,0 +1,75 @@
+name: Build VYRA patch bundle
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  validate-overlay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Check out pinned Morphe Patches source
+        uses: actions/checkout@v4
+        with:
+          repository: MorpheApp/morphe-patches
+          ref: 31234a8465683a389bcfba25ad636fd1cd38fd02
+          path: morphe-patches
+      - name: Check out VYRA source
+        uses: actions/checkout@v4
+        with:
+          path: vyra-youtube
+      - name: Apply and validate VYRA overlay
+        working-directory: morphe-patches
+        run: |
+          python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
+          python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
+          git diff --check
+          grep -q 'key = "vyra_appearance_screen"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
+          grep -q 'titleKey = "vyra_settings_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
+          grep -q 'name = "VYRA YouTube Patches"' patches/build.gradle.kts
+          if git diff --quiet; then echo 'No VYRA source changes detected'; exit 1; fi
+
+  build-mpp:
+    needs: validate-overlay
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/checkout@v4
+        with:
+          repository: MorpheApp/morphe-patches
+          ref: 31234a8465683a389bcfba25ad636fd1cd38fd02
+          path: morphe-patches
+      - uses: actions/checkout@v4
+        with:
+          path: vyra-youtube
+      - name: Apply VYRA overlay
+        working-directory: morphe-patches
+        run: python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
+      - name: Build Android patch bundle
+        working-directory: morphe-patches
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.MORPHE_GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_gpr_user: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_gpr_key: ${{ secrets.MORPHE_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then echo 'Add MORPHE_GITHUB_TOKEN (read:packages) in repository Actions secrets'; exit 1; fi
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :patches:buildAndroid
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vyra-youtube-patch-bundle
+          path: morphe-patches/patches/build/libs/*.mpp
+          if-no-files-found: error
+          retention-days: 14

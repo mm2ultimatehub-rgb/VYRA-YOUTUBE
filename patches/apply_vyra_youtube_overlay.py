@@ -31,11 +31,11 @@ for path in (NAV, SETTINGS, BRANDING, YOUTUBE_STRINGS, PATCH_BUILD):
 # for the dangling $startup_animation_dark__9 resource alias. VYRA's native
 # splash will be integrated separately after the APK resource pipeline is stable.
 branding = BRANDING.read_text(encoding="utf-8")
-splash_import = "import app.morphe.patches.youtube.layout.theme.splashAnimationPatch\\n"
+splash_import = "import app.morphe.patches.youtube.layout.theme.splashAnimationPatch" + chr(10)
 if branding.count(splash_import) != 1:
     fail("expected one upstream splashAnimationPatch import")
 branding = branding.replace(splash_import, "", 1)
-splash_dependency = "            // Owns the hook that loads the startup animation.\\n            splashAnimationPatch,\\n"
+splash_dependency = "            // Owns the hook that loads the startup animation." + chr(10) + "            splashAnimationPatch," + chr(10)
 if branding.count(splash_dependency) != 1:
     fail("expected one upstream splashAnimationPatch dependency")
 branding = branding.replace(splash_dependency, "", 1)

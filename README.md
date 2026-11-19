@@ -16,6 +16,7 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - VYRA Appearance exposes the upstream navigation animation, navigation style, glass toggle, opacity, rounded capsule, and live size/width/spacing preview controls.
 - VYRA Player, Home & Feed, and Shorts retain their upstream working controls (including player/Shorts icon styles and feed-card layout).
 - The upstream Glass renderer remains responsible for drawing and measuring the capsule; this project does not pretend to replace that runtime.
+- The upstream Rive/Lottie splash hook is temporarily excluded from VYRA's patch bundle to isolate the reported Android resource-encoding failure; a VYRA-native splash is still pending.
 - GitHub Actions can build the .mpp patch bundle. An .mpp is **not** an installable APK.
 
 ## Target baseline

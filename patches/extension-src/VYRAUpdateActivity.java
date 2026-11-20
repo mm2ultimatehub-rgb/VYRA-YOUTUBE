@@ -62,6 +62,9 @@ public final class VYRAUpdateActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return true;
             }
+            @Override public void onPageFinished(WebView view, String url) {
+                checkForUpdate();
+            }
         });
         web.setWebChromeClient(new WebChromeClient());
         web.addJavascriptInterface(new InstallerBridge(), "VYRAInstaller");
@@ -76,7 +79,6 @@ public final class VYRAUpdateActivity extends Activity {
             String html = readStream(input);
             setContentView(web);
             web.loadDataWithBaseURL("https://vyra.local/", html, "text/html", "UTF-8", null);
-            checkForUpdate();
         } catch (Exception error) {
             setContentView(web);
             fail("Güncelleme ekranı açılamadı.");

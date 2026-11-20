@@ -10,6 +10,10 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - The supplied splash direction is an 8-second black/silver animation: glass V descends, a thin circular light ring appears, spaced VYRA lettering fades in, and a thin loading line completes.
 
 ## Current implementation
+
+### Stability defaults
+- VYRA splash animation and custom Glass rendering are opt-in until validated on physical Android devices.
+- The APK keeps all supported native ABIs; no ABI is stripped during packaging.
 - VYRA patch overlay is applied to pinned Morphe Patches source.
 - Root settings branding is renamed to VYRA MOD.
 - The VYRA MOD root organizes the existing General, Feed, Player, and Shorts settings categories as **VYRA Appearance**, **VYRA Home & Feed**, **VYRA Player**, and **VYRA Shorts**.

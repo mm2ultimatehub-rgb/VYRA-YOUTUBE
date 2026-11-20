@@ -29,12 +29,12 @@ shutil.copyfile(activity_source, activity_target)
 # Compile against AndroidX Core's FileProvider already supplied by YouTube at runtime.
 extension_build = UPSTREAM / "extensions/youtube/build.gradle.kts"
 gradle = extension_build.read_text(encoding="utf-8")
-dependency_anchor = "dependencies {\\n    implementation(libs.annotation)"
+dependency_anchor = "    implementation(libs.annotation)"
 if gradle.count(dependency_anchor) != 1:
     fail("YouTube extension dependency anchor changed")
 gradle = gradle.replace(
     dependency_anchor,
-    'dependencies {\\n    compileOnly("androidx.core:core:1.15.0")\\n    implementation(libs.annotation)',
+    '    compileOnly("androidx.core:core:1.15.0")\\n' + dependency_anchor,
     1,
 )
 extension_build.write_text(gradle, encoding="utf-8")

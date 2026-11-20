@@ -58,6 +58,13 @@
 - Player appearance selector with preview.
 - Reset to VYRA defaults.
 
+## Approved prototype scope
+- From `Sıvı Cam Alt Menü.html`, use only the bottom navigation capsule: five native YouTube destinations (Home, Shorts, Create, Subscriptions, You), the central Create action, selected-tab movement, and the translucent glass surface. Do not port the sample Home/Shorts/Subscriptions page mockups or its theme-picker/demo controls.
+- The capsule should read as clear silver glass rather than a dark slab: low tint/opacity, visible but restrained rim highlight, rounded ends, and smooth selection motion. Preserve the upstream Glass renderer and real YouTube navigation actions.
+- Keep the original YouTube navigation when Glass is disabled. The Glass preference stays OFF by default; when enabled, VYRA defaults use a more transparent opacity (14/100), rounded ends, and navigation animations enabled.
+- From `yukleme-animasyonu.html`, use only the glass orb, circular progress ring, percentage, and completion/check animation as the visual for a future VYRA patch-download/update progress surface. Do not port its sample stage, replay demo, decorative theme, or fixed 5.4-second/48 MB simulated progress. Any shipped progress must be driven by actual byte/download progress.
+- The loading orb is not the YouTube launch splash. Keep startup branding separate; do not delay YouTube launch by running a fake download animation.
+
 ## Implementation mapping and limits
 - The current pinned Morphe stack already provides the Glass capsule renderer, opacity, corner shape, size/width/spacing preview, navigation animation toggle, player icon styles, Shorts icon styles, feed-card layout, player overlay opacity, and theme color preferences.
 - Current VYRA overlay brands the settings entry as VYRA MOD and groups the existing General, Feed, Player, and Shorts settings under VYRA Appearance, VYRA Home & Feed, VYRA Player, and VYRA Shorts.

@@ -50,3 +50,18 @@
 - [ ] Install on Android 16 / API 36.
 - [ ] Smoke-test cold start, home, search, Shorts, player, subscriptions, profile, settings, Glass ON/OFF, and account flows.
 - [ ] Publish a signed APK only after all tests pass, with build provenance and checksum.
+
+
+## Milestone 2A — app-wide Liquid Glass (supersedes navigation-only completion)
+- [ ] Inventory verified runtime hooks for every supported UI surface in YouTube 21.30.216.
+- [ ] Implement persisted VYRA Liquid Glass master switch (OFF by default; OFF restores stock UI).
+- [ ] Implement shared glass material renderer/settings for translucent fill, blur/fallback, rim highlight, and opacity.
+- [ ] Apply and verify Home/feed surfaces, chips, cards' UI chrome, dialogs, and menus.
+- [ ] Apply and verify Search fields, filters, history/suggestions, results actions, and menus.
+- [ ] Apply and verify Player controls, action panels, description, Up next, and player settings sheets.
+- [ ] Apply and verify Shorts action rail, metadata overlays, comments/share/remix sheets.
+- [ ] Apply and verify Subscriptions, Library, Profile/You, and Settings surfaces.
+- [ ] Verify thumbnails and video frames remain untouched and readable.
+- [ ] Verify native actions, accessibility, gestures, playback, and account flows remain functional.
+- [ ] Verify master ON/OFF, persistence, reduced-motion, and no-blur fallback on Android 16.
+- [ ] Build a clean .mpp, then separately build/sign/install/smoke-test a clean-baseline APK before release.

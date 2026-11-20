@@ -157,7 +157,7 @@ if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", T
     fail("VYRA must enable Glass by default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
-splash_setting_anchor = '    public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
+splash_setting_anchor = new_nav_glass
 if extension_settings.count(splash_setting_anchor) != 1:
     fail("VYRA splash setting insertion anchor changed")
 extension_settings = extension_settings.replace(

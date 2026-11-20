@@ -3,11 +3,11 @@ name: Build VYRA patch bundle
 on:
   push:
     branches: [main]
-    paths-ignore: ['patches-bundle.json']
+    paths-ignore: ['patches-bundle.json', 'build-status.json']
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: read
 
 jobs:
@@ -130,3 +130,18 @@ jobs:
           path: morphe-patches/patches/build/libs/*.mpp
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish build status for verification
+        if: always()
+        env:
+          BUILD_STATUS: ${{ job.status }}
+          BUILD_RUN_ID: ${{ github.run_id }}
+          BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '{"run_id":%s,"status":"%s","url":"%s","commit":"%s"}\\n' "$BUILD_RUN_ID" "$BUILD_STATUS" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build-status.json
+          git commit -m "Record VYRA patch build status [skip ci]" || exit 0
+          git push origin "HEAD:$GITHUB_REF_NAME"

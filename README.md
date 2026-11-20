@@ -19,6 +19,11 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - The upstream Rive/Lottie splash hook is temporarily excluded from VYRA's patch bundle to isolate the reported Android resource-encoding failure; a VYRA-native splash is still pending.
 - GitHub Actions can build the .mpp patch bundle. An .mpp is **not** an installable APK.
 
+## Approved prototype scope
+- `Sıvı Cam Alt Menü.html` is a reference only for the bottom navigation capsule. Only its five-tab menu, central Create action, glass selection indicator, and translucent capsule are in scope; its demo page bodies and theme demo are not part of the app.
+- `yukleme-animasyonu.html` is a reference only for a future update/download progress indicator (glass orb, ring, percentage, completion state). Its timed demo progress is not used; real progress must come from the actual download operation.
+- The stock YouTube navigation remains the default. When the user enables Glass, VYRA defaults are a clearer capsule (opacity 14/100), rounded ends, and navigation animations enabled.
+
 ## Target baseline
 - Android package: `com.google.android.youtube`
 - Target version: `21.30.216`

@@ -134,7 +134,7 @@ for filename, content in (
 extension_settings = EXTENSION_SETTINGS.read_text(encoding="utf-8")
 setting_defaults = {
     'new BooleanSetting("morphe_navigation_bar_animations", FALSE, parentNot(HIDE_NAVIGATION_BAR))':
-        'new BooleanSetting("morphe_navigation_bar_animations", TRUE, parentNot(HIDE_NAVIGATION_BAR))',
+        'new BooleanSetting("morphe_navigation_bar_animations", FALSE, parentNot(HIDE_NAVIGATION_BAR))',
     'new IntegerSetting("morphe_navigation_bar_glass_opacity", 20, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
         'new IntegerSetting("morphe_navigation_bar_glass_opacity", 14, true, parentsAll(parent(NAVIGATION_BAR_GLASS)',
     'new BooleanSetting("morphe_navigation_bar_glass_round", FALSE, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
@@ -153,7 +153,7 @@ extension_settings = extension_settings.replace(old_nav_glass, new_nav_glass, 1)
 glass_master_anchor = new_nav_glass
 if extension_settings.count(glass_master_anchor) != 1:
     fail("VYRA glass master setting insertion anchor changed")
-extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", true, true);', 1)
+extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", false, true);', 1)
 if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(') != 1:
     fail("VYRA must enable Glass by default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
@@ -163,7 +163,7 @@ if extension_settings.count(splash_setting_anchor) != 1:
     fail("VYRA splash setting insertion anchor changed")
 extension_settings = extension_settings.replace(
     splash_setting_anchor,
-    splash_setting_anchor + '\n    public static final BooleanSetting VYRA_SPLASH_SCREEN = new BooleanSetting("vyra_splash_screen", TRUE, true);',
+    splash_setting_anchor + '\n    public static final BooleanSetting VYRA_SPLASH_SCREEN = new BooleanSetting("vyra_splash_screen", FALSE, true);',
     1
 )
 

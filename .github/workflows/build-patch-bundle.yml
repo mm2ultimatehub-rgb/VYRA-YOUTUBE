@@ -135,8 +135,91 @@ jobs:
 
 
 
-  publish-status:
+  build-apk:
     needs: [validate-overlay, build-mpp]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: vyra-youtube-patch-bundle
+          path: dist/patches
+      - name: Download and verify stock YouTube 21.30.216
+        run: |
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://archive.org/download/jhc-apks/apks/com.google.android.youtube/com.google.android.youtube-21.30.216-all.apk" \
+            -o stock-youtube.apk
+          echo "3775a15129dcc4e5b80fc17b7e0841b7fdd1ca89a6e72baa798806f666c74d02  stock-youtube.apk" | sha256sum -c -
+      - name: Download Morphe Desktop CLI
+        run: |
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.2.0-dev.12/morphe-desktop-2.2.0-dev.12-all.jar" \
+            -o morphe-desktop.jar
+          test -s morphe-desktop.jar
+      - name: Generate dedicated VYRA YouTube signing key
+        id: signing
+        run: |
+          PASS="$(openssl rand -hex 24)"
+          echo "::add-mask::$PASS"
+          keytool -genkeypair -v \
+            -keystore vyra-youtube-keystore.p12 -storetype PKCS12 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -alias vyra-youtube -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=VYRA Project, OU=VYRA YouTube, O=VYRA"
+          echo "password=$PASS" >> "$GITHUB_OUTPUT"
+      - name: Inspect compatible patch options
+        run: |
+          PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
+          test -n "$PATCHES"
+          java -jar morphe-desktop.jar list-patches --patches "$PATCHES" -f com.google.android.youtube --with-options | tee patch-list.txt
+      - name: Patch and sign VYRA YouTube
+        env:
+          KEYSTORE_PASSWORD: ${{ steps.signing.outputs.password }}
+        run: |
+          PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
+          java -jar morphe-desktop.jar patch \
+            --patches "$PATCHES" \
+            --out "VYRA-YouTube-21.30.216.apk" \
+            --striplibs arm64-v8a \
+            --keystore "vyra-youtube-keystore.p12" \
+            --keystore-password "$KEYSTORE_PASSWORD" \
+            --keystore-entry-alias "vyra-youtube" \
+            --keystore-entry-password "$KEYSTORE_PASSWORD" \
+            --signer "VYRA Project" \
+            --result-file "patch-result.json" \
+            "stock-youtube.apk"
+          jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null
+          test -s "VYRA-YouTube-21.30.216.apk"
+      - name: Verify APK signature and package
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.216.apk"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | head -1 | tee package-info.txt
+      - name: Prepare signed VYRA delivery
+        env:
+          KEYSTORE_PASSWORD: ${{ steps.signing.outputs.password }}
+        run: |
+          printf 'Alias: vyra-youtube\nPassword: %s\nStore type: PKCS12\n' "$KEYSTORE_PASSWORD" > signing-info.txt
+          zip -j vyra-youtube-signed-delivery.zip \
+            "VYRA-YouTube-21.30.216.apk" \
+            "vyra-youtube-keystore.p12" \
+            signing-info.txt patch-result.json package-info.txt patch-list.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vyra-youtube-signed-apk
+          path: |
+            VYRA-YouTube-21.30.216.apk
+            vyra-youtube-signed-delivery.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-status:
+    needs: [validate-overlay, build-mpp, build-apk]
     if: always() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -148,11 +231,13 @@ jobs:
         env:
           VALIDATION_RESULT: ${{ needs.validate-overlay.result }}
           BUILD_RESULT: ${{ needs.build-mpp.result }}
+          APK_RESULT: ${{ needs.build-apk.result }}
           BUILD_RUN_ID: ${{ github.run_id }}
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ "$VALIDATION_RESULT" = "success" ] && [ "$BUILD_RESULT" = "success" ]; then RESULT=success; else RESULT=failure; fi
-          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
+          if [ "$RESULT" = "success" ] && [ "$APK_RESULT" != "success" ]; then RESULT=failure; fi
+          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin "$GITHUB_REF_NAME"

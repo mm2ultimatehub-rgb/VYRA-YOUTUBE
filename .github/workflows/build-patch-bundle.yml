@@ -44,10 +44,10 @@ jobs:
           grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/vyra_startup_animation.json
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
-          grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_animations", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_opacity", 14' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
-          grep -q 'morphe_navigation_bar_glass", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_glass", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'Settings.VYRA_GLASS_MODE.get()' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java
           grep -q 'vyra_glass_mode' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'NavigationBarStyle.DEFAULT' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java

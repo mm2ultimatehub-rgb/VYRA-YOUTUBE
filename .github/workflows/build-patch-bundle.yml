@@ -2,7 +2,7 @@ name: Build VYRA patch bundle
 
 on:
   push:
-    branches: [main, vyra-apk-build-verification]
+    branches: [main, vyra-apk-build-verification, vyra-apk-final-build]
     paths-ignore: ['patches-bundle.json', 'build-status.json']
   pull_request:
     branches: [main]

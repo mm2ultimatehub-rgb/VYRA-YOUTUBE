@@ -110,7 +110,7 @@ settings = replace_once(
     settings,
     manifest_anchor,
     manifest_anchor + """
-            manifest.insertChild(0, "uses-permission") {
+            manifest.root.insertChild(0, "uses-permission") {
                 setAttribute("android:name", "android.permission.REQUEST_INSTALL_PACKAGES")
             }
             val application = apiActivity.parent!!

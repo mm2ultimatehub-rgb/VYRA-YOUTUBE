@@ -82,6 +82,12 @@ for old, new in setting_defaults.items():
     if extension_settings.count(old) != 1:
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
+# The stock YouTube navigation must remain the default until the user opts in.
+if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
+    fail("VYRA must preserve Glass OFF as the default")
+if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
+    fail("VYRA must preserve the upstream default navigation style")
+
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")

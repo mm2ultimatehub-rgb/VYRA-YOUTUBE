@@ -34,8 +34,8 @@ jobs:
         run: |
           python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py ../vyra-youtube/patches/generate_vyra_splash.py
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
-          python3 -m json.tool patches/src/main/resources/custom-branding/raw/morphe_startup_animation.json >/dev/null
-          grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/morphe_startup_animation.json
+          python3 -m json.tool patches/src/main/resources/custom-branding/raw/vyra_startup_animation.json >/dev/null
+          grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/vyra_startup_animation.json
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
@@ -43,6 +43,10 @@ jobs:
           grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'NavigationBarStyle.DEFAULT' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'VYRA_SPLASH_SCREEN' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'vyra_startup_animation.json' patches/src/main/kotlin/app/morphe/patches/shared/layout/branding/StartupAnimationResourcePatch.kt
+          grep -q 'vyra_startup_animation' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java
+          grep -q 'SwitchPreference("vyra_splash_screen"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'titleKey = "vyra_appearance_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'titleKey = "vyra_player_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'titleKey = "vyra_feed_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt

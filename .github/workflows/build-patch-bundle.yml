@@ -12,6 +12,10 @@ permissions:
   contents: write
   packages: read
 
+concurrency:
+  group: vyra-youtube-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-overlay:
     runs-on: ubuntu-latest
@@ -324,11 +328,13 @@ jobs:
           VALIDATION_RESULT: ${{ needs.validate-overlay.result }}
           BUILD_RESULT: ${{ needs.build-mpp.result }}
           APK_RESULT: ${{ needs.build-apk.result }}
+          RELEASE_RESULT: ${{ needs.publish-release.result }}
           BUILD_RUN_ID: ${{ github.run_id }}
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ "$VALIDATION_RESULT" = "success" ] && [ "$BUILD_RESULT" = "success" ]; then RESULT=success; else RESULT=failure; fi
           if [ "$RESULT" = "success" ] && [ "$APK_RESULT" != "success" ]; then RESULT=failure; fi
+          if [ "$RESULT" = "success" ] && [ "$RELEASE_RESULT" != "success" ]; then RESULT=failure; fi
           printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

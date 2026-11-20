@@ -3,9 +3,7 @@ name: Build VYRA patch bundle
 on:
   push:
     branches: [main, vyra-apk-build-verification, vyra-apk-final-build]
-    paths-ignore: ['patches-bundle.json', 'build-status.json', 'updater/update-manifest.json', 'updater/update-status.json']
-  pull_request:
-    branches: [main]
+    paths-ignore: ['patches-bundle.json', 'build-status.json', 'updater/update-manifest.json', 'updater/update-status.json', '.github/workflows/build-patch-bundle.yml']
   workflow_dispatch:
 
 permissions:
@@ -294,7 +292,7 @@ jobs:
 
   publish-release:
     needs: [validate-overlay, build-mpp, build-apk]
-    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
+    if: github.event_name == 'push' && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -371,10 +369,10 @@ jobs:
           if [ "$VALIDATION_RESULT" = "success" ] && [ "$BUILD_RESULT" = "success" ]; then RESULT=success; else RESULT=failure; fi
           if [ "$RESULT" = "success" ] && [ "$APK_RESULT" != "success" ]; then RESULT=failure; fi
           if [ "$RESULT" = "success" ] && [ "$RELEASE_RESULT" != "success" ]; then RESULT=failure; fi
-          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin "$TARGET_BRANCH"
+          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git add build-status.json
           git commit -m "Record VYRA patch build status [skip ci]" || exit 0
           git push origin "HEAD:$TARGET_BRANCH"

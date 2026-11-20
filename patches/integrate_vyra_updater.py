@@ -2,6 +2,7 @@
 """Integrate the native VYRA APK updater into the patched YouTube application."""
 from pathlib import Path
 import os
+import re
 import shutil
 import sys
 import xml.etree.ElementTree as ET
@@ -152,14 +153,27 @@ if not build_number.isdigit():
     fail("VYRA_BUILD_NUMBER must be an integer")
 
 resources = [
-    UPSTREAM / "patches/src/main/resources/addresources/values/youtube/strings.xml",
-    UPSTREAM / "patches/src/main/resources/addresources/values-tr-rTR/youtube/strings.xml",
+    (
+        UPSTREAM / "patches/src/main/resources/addresources/values/youtube/strings.xml",
+        "VYRA Updates",
+        "Check for and install new VYRA releases",
+    ),
+    (
+        UPSTREAM / "patches/src/main/resources/addresources/values-tr-rTR/youtube/strings.xml",
+        "VYRA Güncellemeleri",
+        "Sürümü kontrol et ve yeni VYRA sürümünü yükle",
+    ),
+    (
+        UPSTREAM / "patches/src/main/resources/addresources/values-az-rAZ/youtube/strings.xml",
+        "VYRA Yeniləmələri",
+        "Versiyanı yoxla və yeni VYRA buraxılışını quraşdır",
+    ),
 ]
-for index, path in enumerate(resources):
+for path, title, summary in resources:
     xml = path.read_text(encoding="utf-8")
     labels = (
-        ("vyra_updates_title", "VYRA Güncellemeleri" if index else "VYRA Updates"),
-        ("vyra_updates_summary", "Sürümü kontrol et ve yeni VYRA sürümünü yükle" if index else "Check for and install new VYRA releases"),
+        ("vyra_updates_title", title),
+        ("vyra_updates_summary", summary),
         ("vyra_build_number", build_number),
     )
     for key, value in labels:
@@ -167,5 +181,23 @@ for index, path in enumerate(resources):
             xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)
     path.write_text(xml, encoding="utf-8")
     ET.parse(path)
+
+# Rebrand every translated string resource, not only English and Turkish.
+# Resource keys and implementation/package names remain untouched.
+localized_root = UPSTREAM / "patches/src/main/resources/addresources"
+for path in localized_root.glob("values*/**/strings.xml"):
+    original = path.read_text(encoding="utf-8")
+    def replace_brand(match):
+        value = match.group(2).replace("Morphe", "VYRA")
+        value = value.replace("morphe.software/translate", "github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE")
+        return match.group(1) + value + match.group(3)
+    updated = re.sub(r'(<string\b[^>]*>)(.*?)(</string>)', replace_brand, original, flags=re.DOTALL)
+    updated = re.sub(r'(?m)^([^\n]*VYRA[^\n]*?)[ \t]+$', r'\1', updated)
+    if updated != original:
+        ET.fromstring(updated)
+        path.write_text(updated, encoding="utf-8")
+    for match in re.finditer(r'<string\b[^>]*>(.*?)(</string>)', updated, flags=re.DOTALL):
+        if "Morphe" in match.group(1):
+            fail(f"visible Morphe string remains in {path}")
 
 print(f"Integrated VYRA updater Activity and UI (build {build_number}).")

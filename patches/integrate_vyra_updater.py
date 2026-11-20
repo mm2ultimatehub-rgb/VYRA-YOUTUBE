@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Integrate the native VYRA APK updater into the patched YouTube application."""
+# Android installs require a strictly increasing versionCode for in-place updates.
 from pathlib import Path
 import os
 import re

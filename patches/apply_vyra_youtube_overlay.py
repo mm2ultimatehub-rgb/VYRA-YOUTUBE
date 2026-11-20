@@ -384,7 +384,7 @@ java_source = EXTENSION_NAVIGATION.read_text(encoding="utf-8")
 drawable_import = "import android.graphics.drawable.ColorDrawable;" + chr(10)
 if java_source.count(drawable_import) != 1:
     fail("NavigationBarPatch drawable import anchor changed")
-java_source = java_source.replace(drawable_import, drawable_import + "import android.graphics.drawable.Drawable;" + chr(10), 1)
+java_source = java_source.replace(drawable_import, drawable_import + "import android.graphics.drawable.Drawable;" + chr(10) + "import android.graphics.drawable.GradientDrawable;" + chr(10), 1)
 weak_import = "import java.lang.ref.WeakReference;" + chr(10)
 if java_source.count(weak_import) != 1:
     fail("NavigationBarPatch WeakReference import anchor changed")
@@ -394,7 +394,24 @@ java_anchor = """    /**
      */
     public static void navigationTabCreated(NavigationBar.NavigationButton button, View tabView) {
         YouTubeGlassNavigationBar.navigationTabCreated(button, tabView);"""
-java_replacement = """    // VYRA replaces only Home, Shorts and Subscriptions glyphs in Glass mode.
+java_replacement = """    /** Applies the shared VYRA glass surface to the Shorts lower action container. */
+    public static void styleVYRAShortsBottomBar(View view) {
+        if (view == null || !Settings.VYRA_GLASS_MODE.get()) return;
+        try {
+            final float density = view.getResources().getDisplayMetrics().density;
+            GradientDrawable glass = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xB81B1D22, 0xA8111216});
+            glass.setCornerRadius(24f * density);
+            glass.setStroke(Math.max(1, Math.round(density)), 0x66D9DCE2);
+            view.setBackground(glass);
+            view.setElevation(3f * density);
+        } catch (Exception ex) {
+            Logger.printException(() -> "VYRA Shorts glass styling failed", ex);
+        }
+    }
+
+    // VYRA replaces only Home, Shorts and Subscriptions glyphs in Glass mode.
     // Create remains the native YouTube action and You keeps the real account avatar.
     private static final Map<ImageView, Drawable> VYRA_ORIGINAL_NAV_ICONS = new WeakHashMap<>();
 
@@ -454,6 +471,22 @@ EXTENSION_NAVIGATION.write_text(java_source, encoding="utf-8")
 if source.count("        copyResources(\"navigationbar\", ResourceGroup(\"drawable\", \"morphe_watch_later_selected.xml\"))") != 1:
     fail("pinned navigation resource-copy anchor changed")
 source = source.replace("        copyResources(\"navigationbar\", ResourceGroup(\"drawable\", \"morphe_watch_later_selected.xml\"))", "        copyResources(\n            \"navigationbar\",\n            ResourceGroup(\n                \"drawable\",\n                \"morphe_watch_later_selected.xml\",\n                \"vyra_navigation_home.xml\",\n                \"vyra_navigation_shorts.xml\",\n                \"vyra_navigation_subscriptions.xml\"\n            )\n        )", 1)
+shorts_hook_anchor = """        ShortsBottomBarContainerFingerprint.method.apply {
+            addInstruction(
+                0,
+                "invoke-static { p1 }, $EXTENSION_CLASS->setShortsPlayerBottomInset(Landroid/view/View;)V"
+            )"""
+if source.count(shorts_hook_anchor) != 1:
+    fail("VYRA Shorts bottom container hook anchor changed")
+source = source.replace(
+    shorts_hook_anchor,
+    shorts_hook_anchor + """
+            addInstruction(
+                1,
+                "invoke-static { p1 }, $EXTENSION_CLASS->styleVYRAShortsBottomBar(Landroid/view/View;)V"
+            )""",
+    1
+)
 NAV.write_text(source, encoding="utf-8")
 
 old_group = '''        navPreferences += listOf(

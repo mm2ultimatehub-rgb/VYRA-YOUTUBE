@@ -16,6 +16,7 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - VYRA Appearance exposes the upstream navigation animation, navigation style, glass toggle, opacity, rounded capsule, and live size/width/spacing preview controls.
 - VYRA Player, Home & Feed, and Shorts retain their upstream working controls (including player/Shorts icon styles and feed-card layout).
 - The upstream Glass renderer remains responsible for drawing and measuring the capsule; this project does not pretend to replace that runtime.
+- A VYRA Liquid Glass master switch now gates the verified upstream glass navigation capsule and the upstream glass miniplayer. It defaults OFF, so stock navigation remains the default. This is a real opt-in glass control, not yet an app-wide renderer.
 - The overlay generates a VYRA-branded 8-second Lottie splash from the supplied glass monogram, registers it as an Android raw resource, and routes the native YouTube splash hook to it through a VYRA setting. The Rive-only branch is excluded for the pinned target baseline.
 - The overlay and generated splash pass CI validation, and the pinned Morphe source compiles into an .mpp bundle. Runtime behavior still requires installation and device smoke tests.
 - GitHub Actions can build the .mpp patch bundle. An .mpp is **not** an installable APK.
@@ -30,6 +31,11 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - A successful patch-bundle build is published as a versioned GitHub Release, then `patches-bundle.json` is refreshed to point at that release asset.
 - Morphe Manager can refresh remote sources in the background using its Updates schedule. The source card's Update action forces an immediate check.
 - The glass-orb loader prototype is reserved for a future real download-progress surface; it is not a fake progress screen and does not replace Morphe Manager's own update UI.
+
+
+
+## Full Liquid Glass status
+The requested end state is glass styling across Home/feed, Search, Player, Shorts, Subscriptions, Library, dialogs, and menus, while leaving video frames and thumbnails untouched. The pinned upstream runtime currently exposes verified glass rendering for the navigation capsule and compatible miniplayer only. Other screens use YouTube Litho components and do not expose a verified general-purpose glass/blur hook in this patch baseline. Those screens must not be marked complete or given fake controls; each needs a verified component hook and device testing before it is shipped.
 
 ## Target baseline
 - Android package: `com.google.android.youtube`

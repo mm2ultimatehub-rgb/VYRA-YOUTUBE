@@ -3,7 +3,7 @@ name: Build VYRA patch bundle
 on:
   push:
     branches: [main, vyra-apk-build-verification, vyra-apk-final-build]
-    paths-ignore: ['patches-bundle.json', 'build-status.json']
+    paths-ignore: ['patches-bundle.json', 'build-status.json', 'updater/update-manifest.json', 'updater/update-status.json']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -257,8 +257,61 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  publish-status:
+  publish-release:
     needs: [validate-overlay, build-mpp, build-apk]
+    if: github.event_name == 'push' && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vyra-youtube-signed-apk
+          path: dist
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ github.token }}
+      - name: Publish signed APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          APK="dist/VYRA-YouTube-21.30.216.apk"
+          test -s "$APK"
+          gh release create "vyra-build-$BUILD_NUMBER" "$APK#VYRA YouTube APK" \\
+            --title "VYRA YouTube build $BUILD_NUMBER" \\
+            --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER."
+      - name: Publish verified update manifest
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          APK="dist/VYRA-YouTube-21.30.216.apk"
+          SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          SIZE="$(stat -c%s "$APK")"
+          APK_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vyra-build-$BUILD_NUMBER/VYRA-YouTube-21.30.216.apk"
+          PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cat > updater/update-manifest.json <<EOF
+          {
+            "version": "21.30.216+vyra.$BUILD_NUMBER",
+            "build_number": $BUILD_NUMBER,
+            "package_name": "app.vyra.youtube",
+            "apk_url": "$APK_URL",
+            "sha256": "$SHA256",
+            "size_bytes": $SIZE,
+            "published_at": "$PUBLISHED_AT",
+            "release_notes": "VYRA YouTube build $BUILD_NUMBER"
+          }
+          EOF
+          printf '{ "status": "published", "message": "Yeni VYRA sürümü yayınlandı." }\\n' > updater/update-status.json
+          python3 -m json.tool updater/update-manifest.json >/dev/null
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git add updater/update-manifest.json updater/update-status.json
+          git commit -m "Publish VYRA YouTube update manifest [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+  publish-status:
+    needs: [validate-overlay, build-mpp, build-apk, publish-release]
     if: always() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:

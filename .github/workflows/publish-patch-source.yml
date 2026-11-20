@@ -1,0 +1,120 @@
+name: Publish VYRA patch source
+
+on:
+  workflow_run:
+    workflows: ["Build VYRA patch bundle"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download the bundle from the successful build
+        uses: actions/download-artifact@v4
+        with:
+          name: vyra-youtube-patch-bundle
+          path: dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Version and verify the patch bundle
+        id: bundle
+        env:
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+        run: |
+          set -euo pipefail
+          VERSION="2.3.${RUN_NUMBER}"
+          python3 - "${VERSION}" <<'PY'
+          import pathlib, re, sys, zipfile
+          version = sys.argv[1]
+          candidates = list(pathlib.Path("dist").glob("*.mpp"))
+          if len(candidates) != 1:
+              raise SystemExit(f"Expected exactly one .mpp bundle, found {len(candidates)}")
+          source = candidates[0]
+          target = pathlib.Path("dist") / f"vyra-youtube-patches-{version}.mpp"
+          temporary = target.with_suffix(".tmp")
+          with zipfile.ZipFile(source, "r") as zin, zipfile.ZipFile(temporary, "w") as zout:
+              names = set(zin.namelist())
+              manifest_name = "META-INF/MANIFEST.MF"
+              if manifest_name not in names:
+                  raise SystemExit("Bundle has no META-INF/MANIFEST.MF")
+              for info in zin.infolist():
+                  data = zin.read(info.filename)
+                  if info.filename == manifest_name:
+                      text = data.decode("utf-8")
+                      text, count = re.subn(r"(?m)^Version: .*?$", f"Version: {version}", text)
+                      if count != 1:
+                          raise SystemExit("Expected exactly one Version field in bundle manifest")
+                      data = text.encode("utf-8")
+                  zout.writestr(info, data)
+          temporary.replace(target)
+          with zipfile.ZipFile(target) as z:
+              manifest = z.read("META-INF/MANIFEST.MF").decode("utf-8")
+              if f"Version: {version}" not in manifest:
+                  raise SystemExit("Version verification failed")
+          print(f"version={version}")
+          PY
+          VERSION="2.3.${RUN_NUMBER}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          ls -lh dist/*.mpp
+
+      - name: Publish versioned GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bundle.outputs.version }}
+          target_commitish: ${{ github.event.workflow_run.head_sha }}
+          name: VYRA YouTube Patches ${{ steps.bundle.outputs.version }}
+          body: |
+            Automated VYRA YouTube patch bundle.
+
+            - Target app: YouTube 21.30.216
+            - Patch source: VYRA-YOUTUBE
+            - Built from commit: ${{ github.event.workflow_run.head_sha }}
+          files: dist/vyra-youtube-patches-*.mpp
+          make_latest: true
+          fail_on_unmatched_files: true
+
+      - name: Update remote source metadata
+        uses: actions/github-script@v7
+        env:
+          BUNDLE_VERSION: ${{ steps.bundle.outputs.version }}
+        with:
+          script: |
+            const version = process.env.BUNDLE_VERSION;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const metadata = {
+              version,
+              download_url: `https://github.com/${owner}/${repo}/releases/download/v${version}/vyra-youtube-patches-${version}.mpp`,
+              created_at: new Date().toISOString(),
+              description: "VYRA visual and experience patches for YouTube"
+            };
+            let sha;
+            try {
+              const existing = await github.rest.repos.getContent({
+                owner, repo, path: "patches-bundle.json", ref: "main"
+              });
+              sha = existing.data.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo,
+              path: "patches-bundle.json",
+              message: "[skip ci] Update VYRA patch source metadata",
+              branch: "main",
+              sha,
+              content: Buffer.from(JSON.stringify(metadata, null, 2) + "\n").toString("base64")
+            });

@@ -26,13 +26,16 @@ PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
 EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
+EXTENSION_WIDE_SEARCH = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/WideSearchBarPatch.java"
+EXTENSION_PLAYER = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/LegacyPlayerControlsPatch.java"
+PLAYER_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/playercontrols/LegacyPlayerControlsPatch.kt"
 NAVIGATION_RESOURCES = ROOT / "patches/src/main/resources/navigationbar/drawable"
 
 def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, PLAYER_PATCH):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -140,6 +143,10 @@ for old, new in setting_defaults.items():
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
 # The stock YouTube navigation must remain the default until the user opts in.
+glass_master_anchor = 'public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
+if extension_settings.count(glass_master_anchor) != 1:
+    fail("VYRA glass master setting insertion anchor changed")
+extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", true, true);', 1)
 if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
     fail("VYRA must preserve Glass OFF as the default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
@@ -154,6 +161,13 @@ extension_settings = extension_settings.replace(
 )
 
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
+
+# Wire the shared VYRA glass master switch into General settings.
+general_pref_anchor = '            SwitchPreference("morphe_native_snackbar", summary = true),'
+if settings.count(general_pref_anchor) != 1:
+    fail("VYRA glass master preference anchor changed")
+settings = settings.replace(general_pref_anchor, '            SwitchPreference("vyra_glass_mode", summary = true),\n' + general_pref_anchor, 1)
+SETTINGS.write_text(settings, encoding="utf-8")
 
 # Route the native YouTube Lottie splash hook to the VYRA resource when enabled.
 theme_source = EXTENSION_THEME.read_text(encoding="utf-8")
@@ -204,6 +218,117 @@ if theme_source.count(old_type) != 1:
     fail("ThemePatch splash style selection anchor changed")
 theme_source = theme_source.replace(old_type, new_type, 1)
 EXTENSION_THEME.write_text(theme_source, encoding="utf-8")
+
+# Apply the shared glass treatment to the real top toolbar and wide search field.
+wide_source = EXTENSION_WIDE_SEARCH.read_text(encoding="utf-8")
+wide_anchor = """    public static void initializeWideSearchbar(View toolbar) {
+        try {
+            if (!WIDE_SEARCHBAR_ENABLED) {
+                return;
+            }"""
+wide_replacement = """    public static void initializeWideSearchbar(View toolbar) {
+        try {
+            if (Settings.VYRA_GLASS_MODE.get() && toolbar != null) {
+                GradientDrawable toolbarGlass = new GradientDrawable(
+                        GradientDrawable.Orientation.TOP_BOTTOM,
+                        new int[]{0xB81B1D22, 0xA8111216});
+                toolbarGlass.setCornerRadius(Dim.dp(18));
+                toolbarGlass.setStroke(Dim.dp(1), 0x66D9DCE2);
+                toolbar.setBackground(toolbarGlass);
+                toolbar.setElevation(Dim.dp(5));
+            }
+            if (!WIDE_SEARCHBAR_ENABLED) {
+                return;
+            }"""
+if wide_source.count(wide_anchor) != 1:
+    fail("VYRA toolbar glass hook anchor changed")
+wide_source = wide_source.replace(wide_anchor, wide_replacement, 1)
+search_bg_anchor = """            searchBackground.setColor(backgroundColor);"""
+if wide_source.count(search_bg_anchor) != 1:
+    fail("VYRA search glass background anchor changed")
+wide_source = wide_source.replace(search_bg_anchor, """            if (Settings.VYRA_GLASS_MODE.get()) {
+                searchBackground.setColor(0xA8111216);
+                searchBackground.setStroke(Dim.dp(1), 0x66D9DCE2);
+            } else {
+                searchBackground.setColor(backgroundColor);
+            }""", 1)
+EXTENSION_WIDE_SEARCH.write_text(wide_source, encoding="utf-8")
+
+# Style each real player control view after YouTube inflates it.
+player_source = EXTENSION_PLAYER.read_text(encoding="utf-8")
+player_import_anchor = "import android.graphics.Rect;" + chr(10)
+if player_source.count(player_import_anchor) != 1:
+    fail("VYRA player drawable import anchor changed")
+player_source = player_source.replace(player_import_anchor, player_import_anchor + "import android.graphics.drawable.GradientDrawable;" + chr(10), 1)
+player_method = """
+    /** Applies a restrained glass capsule to native player controls without changing click behavior. */
+    public static void styleVYRAPlayerControl(View view) {
+        if (view == null || !Settings.VYRA_GLASS_MODE.get()) return;
+        try {
+            final float density = view.getResources().getDisplayMetrics().density;
+            GradientDrawable glass = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{0xB81B1D22, 0xA8111216});
+            glass.setCornerRadius(28f * density);
+            glass.setStroke(Math.max(1, Math.round(density)), 0x66D9DCE2);
+            view.setBackground(glass);
+            view.setElevation(3f * density);
+        } catch (Exception ex) {
+            Logger.printException(() -> "VYRA player glass styling failed", ex);
+        }
+    }
+
+"""
+if player_source.count("\n}") < 1:
+    fail("VYRA player class closing brace missing")
+last = player_source.rfind("\n}")
+player_source = player_source[:last] + "\n" + player_method + player_source[last:]
+EXTENSION_PLAYER.write_text(player_source, encoding="utf-8")
+
+player_patch = PLAYER_PATCH.read_text(encoding="utf-8")
+top_anchor = """internal fun initializeTopControl(descriptor: String) {
+    inflateTopControlMethodRef.get()!!.addInstruction(
+        inflateTopControlInsertIndex++,
+        "invoke-static { v$inflateTopControlRegister }, $descriptor->" +
+                "initializeLegacyButton(Landroid/view/View;)V",
+    )
+}"""
+top_replacement = """internal fun initializeTopControl(descriptor: String) {
+    inflateTopControlMethodRef.get()!!.addInstruction(
+        inflateTopControlInsertIndex++,
+        "invoke-static { v$inflateTopControlRegister }, $EXTENSION_CLASS->styleVYRAPlayerControl(Landroid/view/View;)V",
+    )
+    inflateTopControlMethodRef.get()!!.addInstruction(
+        inflateTopControlInsertIndex++,
+        "invoke-static { v$inflateTopControlRegister }, $descriptor->" +
+                "initializeLegacyButton(Landroid/view/View;)V",
+    )
+}"""
+if player_patch.count(top_anchor) != 1:
+    fail("VYRA top player control hook anchor changed")
+player_patch = player_patch.replace(top_anchor, top_replacement, 1)
+bottom_anchor = """fun initializeLegacyBottomControl(descriptor: String) {
+    inflateBottomControlMethodRef.get()!!.addInstruction(
+        inflateBottomControlInsertIndex++,
+        "invoke-static { v$inflateBottomControlRegister }, $descriptor->" +
+                "initializeLegacyButton(Landroid/view/View;)V",
+    )
+}"""
+bottom_replacement = """fun initializeLegacyBottomControl(descriptor: String) {
+    inflateBottomControlMethodRef.get()!!.addInstruction(
+        inflateBottomControlInsertIndex++,
+        "invoke-static { v$inflateBottomControlRegister }, $EXTENSION_CLASS->styleVYRAPlayerControl(Landroid/view/View;)V",
+    )
+    inflateBottomControlMethodRef.get()!!.addInstruction(
+        inflateBottomControlInsertIndex++,
+        "invoke-static { v$inflateBottomControlRegister }, $descriptor->" +
+                "initializeLegacyButton(Landroid/view/View;)V",
+    )
+}"""
+if player_patch.count(bottom_anchor) != 1:
+    fail("VYRA bottom player control hook anchor changed")
+player_patch = player_patch.replace(bottom_anchor, bottom_replacement, 1)
+PLAYER_PATCH.write_text(player_patch, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
 splash_import = "import app.morphe.patches.youtube.misc.settings.settingsPatch" + chr(10)
@@ -412,6 +537,8 @@ for key, value in (
     ("vyra_appearance_title", "VYRA Appearance"),
     ("vyra_splash_screen_title", "VYRA splash screen"),
     ("vyra_splash_screen_summary", "Play the VYRA liquid-glass animation when YouTube starts"),
+    ("vyra_glass_mode_title", "VYRA Liquid Glass"),
+    ("vyra_glass_mode_summary", "Apply the VYRA glass treatment to supported YouTube surfaces and player controls"),
     ("vyra_feed_title", "VYRA Home &amp; Feed"),
     ("vyra_player_title", "VYRA Player"),
     ("vyra_shorts_title", "VYRA Shorts"),

@@ -64,11 +64,11 @@ logo.putdata([(255,255,255,max(r,g,b)) for r,g,b in source.getdata()])
 ring = Image.new("RGBA", (380,380), (0,0,0,0))
 draw = ImageDraw.Draw(ring)
 draw.ellipse((4,4,376,376), outline=(220,225,235,35), width=2)
-for i in range(48):
-    angle = math.radians(250 + i*1.85)
-    x, y = 190 + 186*math.cos(angle), 190 + 186*math.sin(angle)
-    alpha = int(10 + 245*(i/48)**2)
-    draw.ellipse((x-1.5,y-1.5,x+1.5,y+1.5), fill=(245,248,255,alpha))
+for i in range(90):
+    angle = 250 + i
+    alpha = int(18 + 237*(i/89)**2)
+    draw.arc((4,4,376,376), start=angle, end=angle+1.4,
+             fill=(245,248,255,alpha), width=2)
 ring = ring.filter(ImageFilter.GaussianBlur(0.45))
 
 # Low-contrast radial glow that gently breathes behind the monogram.

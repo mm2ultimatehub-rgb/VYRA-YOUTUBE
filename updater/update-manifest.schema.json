@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/main/updater/update-manifest.schema.json",
+  "title": "VYRA Android update manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "package_name",
+    "apk_url",
+    "sha256",
+    "size_bytes",
+    "published_at"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\\\.[0-9]+\\\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "package_name": {
+      "const": "com.google.android.youtube"
+    },
+    "min_app_version": {
+      "type": "string"
+    },
+    "apk_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "release_notes": {
+      "type": "string",
+      "maxLength": 10000
+    }
+  }
+}

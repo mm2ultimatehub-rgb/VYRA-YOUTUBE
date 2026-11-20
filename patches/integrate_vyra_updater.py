@@ -34,7 +34,7 @@ if gradle.count(dependency_anchor) != 1:
     fail("YouTube extension dependency anchor changed")
 gradle = gradle.replace(
     dependency_anchor,
-    '    compileOnly("androidx.core:core:1.15.0")\\n' + dependency_anchor,
+    '    compileOnly("androidx.core:core:1.15.0")' + chr(10) + dependency_anchor,
     1,
 )
 extension_build.write_text(gradle, encoding="utf-8")

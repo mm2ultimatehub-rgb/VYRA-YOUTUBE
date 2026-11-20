@@ -61,14 +61,15 @@ if splash.count(rive_dependency) != 1:
     fail("expected one splash Rive resource dependency")
 splash = splash.replace(rive_dependency, "        startupAnimationResourcePatch", 1)
 rive_start = "        // The Rive styles are not available before 21.30:"
-rive_end = "\n        }\n\n        splashScreenStyleFingerprint.method.apply {"
+end_marker = "        splashScreenStyleFingerprint.method.apply {"
 if splash.count(rive_start) != 1:
     fail("pinned Rive splash start anchor changed")
 start_index = splash.index(rive_start)
-end_index = splash.find(rive_end, start_index)
+end_index = splash.rfind(end_marker)
 if end_index <= start_index:
     fail("pinned Rive splash end anchor changed")
-splash = splash[:start_index] + "\n        splashScreenStyleFingerprint.method.apply {" + splash[end_index + len(rive_end):]
+# Remove the complete Rive-only branch while retaining the native Lottie hook below it.
+splash = splash[:start_index] + end_marker + splash[end_index + len(end_marker):]
 SPLASH_PATCH.write_text(splash, encoding="utf-8")
 
 # Offer only the two supported VYRA splash choices; Rive styles are deliberately disabled.

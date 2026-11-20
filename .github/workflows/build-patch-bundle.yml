@@ -159,36 +159,18 @@ jobs:
             "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.2.0-dev.12/morphe-desktop-2.2.0-dev.12-all.jar" \
             -o morphe-desktop.jar
           test -s morphe-desktop.jar
-      - name: Generate dedicated VYRA YouTube signing key
-        id: signing
-        run: |
-          PASS="$(openssl rand -hex 24)"
-          echo "::add-mask::$PASS"
-          keytool -genkeypair -v \
-            -keystore vyra-youtube-keystore.p12 -storetype PKCS12 \
-            -storepass "$PASS" -keypass "$PASS" \
-            -alias vyra-youtube -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=VYRA Project, OU=VYRA YouTube, O=VYRA"
-          echo "password=$PASS" >> "$GITHUB_OUTPUT"
       - name: Inspect compatible patch options
         run: |
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           test -n "$PATCHES"
           java -jar morphe-desktop.jar list-patches --patches "$PATCHES" -f com.google.android.youtube --with-options | tee patch-list.txt
       - name: Patch and sign VYRA YouTube
-        env:
-          KEYSTORE_PASSWORD: ${{ steps.signing.outputs.password }}
         run: |
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           java -jar morphe-desktop.jar patch \
             --patches "$PATCHES" \
             --out "VYRA-YouTube-21.30.216.apk" \
             --striplibs arm64-v8a \
-            --keystore "vyra-youtube-keystore.p12" \
-            --keystore-password "$KEYSTORE_PASSWORD" \
-            --keystore-entry-alias "vyra-youtube" \
-            --keystore-entry-password "$KEYSTORE_PASSWORD" \
-            --signer "VYRA Project" \
             --result-file "patch-result.json" \
             "stock-youtube.apk"
           jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null
@@ -201,14 +183,10 @@ jobs:
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
           "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | head -1 | tee package-info.txt
       - name: Prepare signed VYRA delivery
-        env:
-          KEYSTORE_PASSWORD: ${{ steps.signing.outputs.password }}
         run: |
-          printf 'Alias: vyra-youtube\nPassword: %s\nStore type: PKCS12\n' "$KEYSTORE_PASSWORD" > signing-info.txt
           zip -j vyra-youtube-signed-delivery.zip \
             "VYRA-YouTube-21.30.216.apk" \
-            "vyra-youtube-keystore.p12" \
-            signing-info.txt patch-result.json package-info.txt patch-list.txt
+            patch-result.json package-info.txt patch-list.txt
       - uses: actions/upload-artifact@v4
         with:
           name: vyra-youtube-signed-apk

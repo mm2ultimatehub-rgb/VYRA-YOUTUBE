@@ -28,6 +28,7 @@ EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/exten
 EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
 EXTENSION_WIDE_SEARCH = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/WideSearchBarPatch.java"
 EXTENSION_PLAYER = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/LegacyPlayerControlsPatch.java"
+EXTENSION_GLASS_NAV = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java"
 PLAYER_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/playercontrols/LegacyPlayerControlsPatch.kt"
 NAVIGATION_RESOURCES = ROOT / "patches/src/main/resources/navigationbar/drawable"
 
@@ -35,7 +36,7 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, PLAYER_PATCH):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, EXTENSION_GLASS_NAV, PLAYER_PATCH):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -142,13 +143,18 @@ for old, new in setting_defaults.items():
     if extension_settings.count(old) != 1:
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
-# The stock YouTube navigation must remain the default until the user opts in.
-glass_master_anchor = 'public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
+# Enable the Glass capsule by default; the VYRA master switch can disable it globally.
+old_nav_glass = 'public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
+new_nav_glass = old_nav_glass.replace(", FALSE,", ", TRUE,")
+if extension_settings.count(old_nav_glass) != 1:
+    fail("VYRA navigation glass default anchor changed")
+extension_settings = extension_settings.replace(old_nav_glass, new_nav_glass, 1)
+glass_master_anchor = new_nav_glass
 if extension_settings.count(glass_master_anchor) != 1:
     fail("VYRA glass master setting insertion anchor changed")
 extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", true, true);', 1)
-if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
-    fail("VYRA must preserve Glass OFF as the default")
+if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(') != 1:
+    fail("VYRA must enable Glass by default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
 splash_setting_anchor = '    public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
@@ -253,6 +259,18 @@ wide_source = wide_source.replace(search_bg_anchor, """            if (Settings.
                 searchBackground.setColor(backgroundColor);
             }""", 1)
 EXTENSION_WIDE_SEARCH.write_text(wide_source, encoding="utf-8")
+
+# Make the VYRA master switch control the actual floating navigation renderer.
+glass_nav_source = EXTENSION_GLASS_NAV.read_text(encoding="utf-8")
+glass_enabled_anchor = """    private static final boolean ENABLED = Settings.NAVIGATION_BAR_GLASS.get()
+            && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
+glass_enabled_replacement = """    private static final boolean ENABLED = Settings.VYRA_GLASS_MODE.get()
+            && Settings.NAVIGATION_BAR_GLASS.get()
+            && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
+if glass_nav_source.count(glass_enabled_anchor) != 1:
+    fail("VYRA global glass navigation gate anchor changed")
+glass_nav_source = glass_nav_source.replace(glass_enabled_anchor, glass_enabled_replacement, 1)
+EXTENSION_GLASS_NAV.write_text(glass_nav_source, encoding="utf-8")
 
 # Style each real player control view after YouTube inflates it.
 player_source = EXTENSION_PLAYER.read_text(encoding="utf-8")

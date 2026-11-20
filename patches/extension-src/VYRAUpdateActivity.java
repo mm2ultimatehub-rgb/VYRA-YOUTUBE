@@ -274,7 +274,7 @@ public final class VYRAUpdateActivity extends Activity {
         }
     }
 
-    private final class InstallerBridge {
+    public final class InstallerBridge {
         @JavascriptInterface
         public void installUpdate() {
             runOnUiThread(VYRAUpdateActivity.this::installVerified);

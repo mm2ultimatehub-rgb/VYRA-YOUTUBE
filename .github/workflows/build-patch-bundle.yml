@@ -74,6 +74,8 @@ jobs:
           marker = '        google()\n'
           assert s.count(marker) == 1, 'unexpected pluginManagement repository block'
           additions = ''
+          if 'maven-central.storage-download.googleapis.com' not in s:
+              additions += '        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }\n'
           if 'https://repo1.maven.org/maven2' not in s:
               additions += '        maven { url = uri("https://repo1.maven.org/maven2") }\n'
           if 'mavenCentral()' not in s:

@@ -328,6 +328,28 @@ bottom_replacement = """fun initializeLegacyBottomControl(descriptor: String) {
 if player_patch.count(bottom_anchor) != 1:
     fail("VYRA bottom player control hook anchor changed")
 player_patch = player_patch.replace(bottom_anchor, bottom_replacement, 1)
+top_setup_anchor = """        PlayerTopControlsInflateFingerprint.let {
+            it.method.apply {
+                inflateTopControlMethodRef = WeakReference(this)
+
+                val inflateReturnObjectIndex = it.instructionMatches.last().index
+                inflateTopControlRegister = getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
+                inflateTopControlInsertIndex = inflateReturnObjectIndex + 1
+            }
+        }
+
+        if (is_21_05_or_greater) {"""
+if player_patch.count(top_setup_anchor) != 1:
+    fail("VYRA top player inflate hook anchor changed")
+player_patch = player_patch.replace(
+    top_setup_anchor,
+    top_setup_anchor.replace(
+        "\n        if (is_21_05_or_greater) {",
+        "\n        initializeTopControl(EXTENSION_ADD_ON_API_CLASS_DESCRIPTOR)\n\n        if (is_21_05_or_greater) {",
+        1
+    ),
+    1
+)
 PLAYER_PATCH.write_text(player_patch, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")

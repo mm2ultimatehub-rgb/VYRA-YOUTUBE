@@ -13,9 +13,11 @@
 - [x] Add navigation animation, navigation style, Glass toggle, opacity, rounded capsule, and size preview controls to VYRA Appearance.
 - [x] Expose Glass on/off, opacity, rounded capsule, and size preview (height, width, button spacing).
 - [x] Set VYRA Glass defaults to clear opacity 14/100, rounded ends, and navigation animations ON while keeping Glass OFF until the user enables it.
+- [x] Add the VYRA splash preference and connect it to the native YouTube Lottie hook.
 - [ ] Verify all VYRA category screens in the patched app and confirm preferences persist after force-stop/relaunch.
 - [ ] Verify Glass OFF restores the normal YouTube navigation bar.
 - [ ] Verify the five native destinations and central Create action remain functional with the Glass capsule enabled.
+- [ ] Verify the VYRA splash starts, completes, and falls back safely on the target device.
 
 ## Milestone 2 — complete VYRA appearance
 - [ ] Implement only the approved five-item bottom capsule from the HTML reference; do not port the prototype's sample page content.
@@ -35,7 +37,8 @@
 
 ## Milestone 4 — VYRA identity
 - [ ] Integrate the supplied liquid-glass V launcher icon in all Android adaptive-icon densities.
-- [ ] Convert the approved 8-second splash direction to native-compatible Android resources.
+- [x] Generate the approved 8-second splash as a native-compatible Lottie resource and wire it to the native splash hook.
+- [ ] Verify the splash on-device for startup timing, rendering, and reduced-motion/fallback behavior.
 - [ ] Reserve the glass-orb progress visual for real VYRA patch downloads; replace the HTML demo timer with actual byte progress.
 - [ ] Do not ship a video splash if it causes startup delay, looping, or accessibility issues; use a short native animation/fallback.
 - [ ] Reproduce and fix the previous missing drawable reference error (`$startup_animation_dark__9`) with a regression test.

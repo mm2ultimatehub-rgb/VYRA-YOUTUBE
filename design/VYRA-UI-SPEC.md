@@ -69,8 +69,9 @@
 ## Implementation mapping and limits
 - The current pinned Morphe stack already provides the Glass capsule renderer, opacity, corner shape, size/width/spacing preview, navigation animation toggle, player icon styles, Shorts icon styles, feed-card layout, player overlay opacity, and theme color preferences.
 - Current VYRA overlay brands the settings entry as VYRA MOD and groups the existing General, Feed, Player, and Shorts settings under VYRA Appearance, VYRA Home & Feed, VYRA Player, and VYRA Shorts.
-- The current compiled patch bundle implements the glass bottom navigation and selected supported controls; it does NOT yet apply custom glass materials to every screen listed above.
-- A full interface treatment requires verified hooks for each relevant YouTube UI component and must be implemented incrementally. Do not claim a screen is glass-enabled until its runtime hook is wired and tested on the pinned YouTube build.
+- The VYRA source overlay now wires a master glass setting to the floating bottom navigation renderer, the top toolbar, the injected wide-search field, and native top/bottom player control views. The VYRA splash resource and settings entry are also wired.
+- These new toolbar/player hooks are source-level changes pending a fresh Morphe bundle build and APK runtime verification. Do not describe them as tested on-device until the patched 21.30.216 APK has been installed and exercised.
+- Home feed cards, category chips, Shorts action rail, subscription filters, Library/Profile cards, and modal sheets still need their own verified component hooks. A full interface treatment must be implemented incrementally; do not claim those surfaces are glass-enabled yet.
 - Do not replace server-driven layouts blindly; preserve accessibility, native interactions, account flows, and playback behavior.
 - The exact custom animation speed/type, six-color accent palette, icon pack preview, and global Player appearance selector still require dedicated runtime settings and hooks; do not show these as implemented until their settings actually change the app.
 - The 8-second splash concept is a visual reference only. Prefer Android's native startup surface and a short native-compatible transition rather than delaying app launch with a full-screen video.

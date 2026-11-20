@@ -9,6 +9,7 @@ import sys
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
+import re
 
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
@@ -621,6 +622,54 @@ for key, value in (
         xml = xml.replace("</resources>", f'    <string name="{key}">{value}</string>\n</resources>', 1)
 YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
 ET.parse(YOUTUBE_STRINGS)
+
+# Remove upstream brand references from user-visible settings text while keeping
+# internal resource keys, Java package names, license notices and attribution intact.
+BRAND_STRING_FILES = (
+    ROOT / "patches/src/main/resources/addresources/values/shared/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values/shared-youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/shared/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/shared-youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/youtube/strings.xml",
+)
+
+def rebrand_string_values(path: Path) -> None:
+    if not path.is_file():
+        fail(f"missing localized VYRA string resource: {path}")
+    content = path.read_text(encoding="utf-8")
+    def replace_value(match):
+        value = match.group(2)
+        value = value.replace("Morphe", "VYRA")
+        value = value.replace("morphe.software/translate", "github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE")
+        return match.group(1) + value + match.group(3)
+    updated = re.sub(r'(<string\\b[^>]*>)(.*?)(</string>)', replace_value, content, flags=re.DOTALL)
+    path.write_text(updated, encoding="utf-8")
+    ET.parse(path)
+    if re.search(r'<string\\b[^>]*>[^<]*Morphe', updated):
+        fail(f"user-visible Morphe brand text remains in {path}")
+
+for resource in BRAND_STRING_FILES:
+    rebrand_string_values(resource)
+
+# Explicit Turkish labels for the VYRA-owned settings screens.
+TR_YOUTUBE_STRINGS = BRAND_STRING_FILES[-1]
+tr_xml = TR_YOUTUBE_STRINGS.read_text(encoding="utf-8")
+for key, value in (
+    ("vyra_settings_title", "VYRA MOD"),
+    ("vyra_appearance_title", "VYRA Görünüm"),
+    ("vyra_splash_screen_title", "VYRA açılış ekranı"),
+    ("vyra_splash_screen_summary", "YouTube açılırken VYRA sıvı cam animasyonunu oynat"),
+    ("vyra_glass_mode_title", "VYRA Sıvı Cam"),
+    ("vyra_glass_mode_summary", "Desteklenen YouTube alanlarına ve oynatıcı denetimlerine VYRA cam görünümünü uygula"),
+    ("vyra_feed_title", "VYRA Ana Sayfa ve Akış"),
+    ("vyra_player_title", "VYRA Oynatıcı"),
+    ("vyra_shorts_title", "VYRA Shorts"),
+):
+    if f'name="{key}"' not in tr_xml:
+        tr_xml = tr_xml.replace("</resources>", f'  <string name="{key}">{value}</string>\\n</resources>', 1)
+TR_YOUTUBE_STRINGS.write_text(tr_xml, encoding="utf-8")
+ET.parse(TR_YOUTUBE_STRINGS)
 
 build_script = PATCH_BUILD.read_text(encoding="utf-8")
 metadata_replacements = {

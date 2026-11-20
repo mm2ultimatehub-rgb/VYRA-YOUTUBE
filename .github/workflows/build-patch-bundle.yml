@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install splash asset generator dependency
+        run: python -m pip install --disable-pip-version-check Pillow
       - name: Check out pinned Morphe Patches source
         uses: actions/checkout@v4
         with:
@@ -30,8 +32,10 @@ jobs:
       - name: Apply and validate VYRA overlay
         working-directory: morphe-patches
         run: |
-          python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
+          python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py ../vyra-youtube/patches/generate_vyra_splash.py
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
+          python3 -m json.tool patches/src/main/resources/custom-branding/raw/morphe_startup_animation.json >/dev/null
+          grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/morphe_startup_animation.json
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
@@ -46,11 +50,11 @@ jobs:
           grep -q 'ListPreference("morphe_navigation_bar_style")' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'titleKey = "vyra_settings_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
-          ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt
-          ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt
-          test ! -e patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/SplashAnimationPatch.kt
-          test ! -e patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/GlowMorpheAnimationPatch.kt
-          ! grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt
+          grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/branding/CustomBrandingPatch.kt
+          grep -q 'splashAnimationPatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/seekbar/SeekbarColorPatch.kt
+          grep -q 'startupAnimationResourcePatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/SplashAnimationPatch.kt
+          ! grep -q 'glowMorpheAnimationResourcePatch' patches/src/main/kotlin/app/morphe/patches/youtube/layout/theme/SplashAnimationPatch.kt
+          test -f patches/src/main/resources/custom-branding/raw/morphe_startup_animation_play.json
           grep -q 'name = "VYRA YouTube Patches"' patches/build.gradle.kts
           if git diff --quiet; then echo 'No VYRA source changes detected'; exit 1; fi
 
@@ -62,6 +66,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install splash asset generator dependency
+        run: python -m pip install --disable-pip-version-check Pillow
       - uses: actions/checkout@v4
         with:
           repository: MorpheApp/morphe-patches

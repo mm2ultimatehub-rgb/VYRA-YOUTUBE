@@ -50,3 +50,12 @@
 - [ ] Install on Android 16 / API 36.
 - [ ] Smoke-test cold start, home, search, Shorts, player, subscriptions, profile, settings, Glass ON/OFF, and account flows.
 - [ ] Publish a signed APK only after all tests pass, with build provenance and checksum.
+
+## Milestone 6 — VYRA APK updater
+- [x] Create a liquid-glass updater WebView surface driven only by real native byte progress.
+- [x] Define a strict APK update manifest schema (version, package, HTTPS URL, SHA-256, size, timestamp).
+- [x] Define the trusted WebView/native bridge and require integrity verification before enabling Install.
+- [ ] Add the Android host module that fetches the manifest and downloads to app-private storage.
+- [ ] Verify APK size, SHA-256, package ID, and signing certificate before exposing Install.
+- [ ] Launch Android's package installer through a scoped FileProvider content URI and handle user confirmation/cancellation.
+- [ ] Publish a signed APK release and manifest only after clean build, install, launch, and update smoke tests pass.

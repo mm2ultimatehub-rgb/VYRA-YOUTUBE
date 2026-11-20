@@ -144,9 +144,9 @@ for old, new in setting_defaults.items():
     if extension_settings.count(old) != 1:
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
-# Enable the Glass capsule by default; the VYRA master switch can disable it globally.
+# Keep the Glass capsule opt-in until the custom renderer is device-tested.
 old_nav_glass = 'public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
-new_nav_glass = old_nav_glass.replace(", FALSE,", ", TRUE,")
+new_nav_glass = old_nav_glass.replace(", FALSE,", ", FALSE,")
 if extension_settings.count(old_nav_glass) != 1:
     fail("VYRA navigation glass default anchor changed")
 extension_settings = extension_settings.replace(old_nav_glass, new_nav_glass, 1)
@@ -154,8 +154,8 @@ glass_master_anchor = new_nav_glass
 if extension_settings.count(glass_master_anchor) != 1:
     fail("VYRA glass master setting insertion anchor changed")
 extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", false, true);', 1)
-if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(') != 1:
-    fail("VYRA must enable Glass by default")
+if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
+    fail("VYRA must keep Glass opt-in by default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
 splash_setting_anchor = new_nav_glass

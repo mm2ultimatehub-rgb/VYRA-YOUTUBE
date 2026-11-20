@@ -209,9 +209,11 @@ jobs:
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
-          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.216.apk"
+          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.216.apk" | tee output-signature.txt
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
-          "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | head -1 | tee package-info.txt
+          "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | tee package-info.txt
+          grep -q "name='app.vyra.youtube'" package-info.txt
+          grep -q "application-label:'VYRA YouTube'" package-info.txt
       - name: Prepare signed VYRA delivery
         run: |
           zip -j vyra-youtube-signed-delivery.zip \

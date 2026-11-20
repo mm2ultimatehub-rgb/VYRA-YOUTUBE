@@ -1,0 +1,4 @@
+{
+  "status": "not_published",
+  "message": "No verified APK release is available yet. The current CI output is an .mpp patch bundle, not an installable APK."
+}

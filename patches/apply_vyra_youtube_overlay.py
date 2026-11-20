@@ -21,12 +21,13 @@ VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.
 SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
+EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 
 def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -65,6 +66,23 @@ SEEKBAR.write_text(seekbar, encoding="utf-8")
 # patch must remain because YouTube Music branding still depends on it at compile time.
 for path in (SPLASH_PATCH, GLOW_RESOURCES):
     path.unlink()
+
+# VYRA glass defaults: leave stock navigation selected until the user enables Glass,
+# but make the VYRA capsule clear, fully rounded and animated when enabled.
+extension_settings = EXTENSION_SETTINGS.read_text(encoding="utf-8")
+setting_defaults = {
+    'new BooleanSetting("morphe_navigation_bar_animations", FALSE, parentNot(HIDE_NAVIGATION_BAR))':
+        'new BooleanSetting("morphe_navigation_bar_animations", TRUE, parentNot(HIDE_NAVIGATION_BAR))',
+    'new IntegerSetting("morphe_navigation_bar_glass_opacity", 20, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
+        'new IntegerSetting("morphe_navigation_bar_glass_opacity", 14, true, parentsAll(parent(NAVIGATION_BAR_GLASS)',
+    'new BooleanSetting("morphe_navigation_bar_glass_round", FALSE, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
+        'new BooleanSetting("morphe_navigation_bar_glass_round", TRUE, true, parentsAll(parent(NAVIGATION_BAR_GLASS)',
+}
+for old, new in setting_defaults.items():
+    if extension_settings.count(old) != 1:
+        fail(f"expected exactly one VYRA navigation default anchor: {old}")
+    extension_settings = extension_settings.replace(old, new, 1)
+EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
 old_group = '''        navPreferences += listOf(

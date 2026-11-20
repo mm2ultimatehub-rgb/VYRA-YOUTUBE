@@ -144,7 +144,7 @@ class MainActivity : Activity() {
             return
         }
         val uri = FileProvider.getUriForFile(this, "app.vyra.updater.fileprovider", apk)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths-ignore: ['patches-bundle.json', 'build-status.json']
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -135,7 +137,7 @@ jobs:
 
   publish-status:
     needs: [validate-overlay, build-mpp]
-    if: always()
+    if: always() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

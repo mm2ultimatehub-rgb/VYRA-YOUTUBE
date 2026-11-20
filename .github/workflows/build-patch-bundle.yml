@@ -155,12 +155,12 @@ jobs:
           python-version: '3.x'
       - name: Install VYRA icon conversion dependency
         run: python -m pip install --disable-pip-version-check Pillow
-      - name: Download and verify stock YouTube 21.30.216 arm64
+      - name: Download and verify stock YouTube 21.30.216
         run: |
-          curl -fL --connect-timeout 20 --max-time 300 --retry 3 --retry-delay 2 \
-            "https://archive.org/download/jhc-apks/apks/com.google.android.youtube/com.google.android.youtube-21.30.216-arm64-v8a.apk" \
+          curl -fL --connect-timeout 20 --max-time 360 --retry 3 --retry-delay 2 \
+            "https://archive.org/download/jhc-apks/apks/com.google.android.youtube/com.google.android.youtube-21.30.216-all.apk" \
             -o stock-youtube.apk
-          sha256sum stock-youtube.apk | tee stock-youtube.sha256
+          echo "3775a15129dcc4e5b80fc17b7e0841b7fdd1ca89a6e72baa798806f666c74d02  stock-youtube.apk" | sha256sum -c -
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
           "$APKSIGNER" verify --verbose --print-certs stock-youtube.apk | tee stock-signature.txt
@@ -168,6 +168,21 @@ jobs:
           "$AAPT" dump badging stock-youtube.apk | head -1 | tee stock-package-info.txt
           grep -q "com.google.android.youtube" stock-package-info.txt
           grep -q "21.30.216" stock-package-info.txt
+      - name: Check out current Morphe Desktop source
+        uses: actions/checkout@v4
+        with:
+          repository: MorpheApp/morphe-desktop
+          ref: main
+          path: morphe-desktop-source
+      - name: Build compatible Morphe CLI from source
+        working-directory: morphe-desktop-source
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon shadowJar
+          MORPHE_JAR="$(find build/libs -maxdepth 1 -type f -name '*all.jar' -print -quit)"
+          test -n "$MORPHE_JAR"
+          java -jar "$MORPHE_JAR" --help
+          cp "$MORPHE_JAR" ../morphe-desktop.jar
       - name: Prepare adaptive VYRA launcher icon
         run: |
           python - <<'PY'
@@ -197,12 +212,6 @@ jobs:
               foreground.alpha_composite(mark, ((size-mark.width)//2, (size-mark.height)//2))
               foreground.save(target / "morphe_adaptive_foreground_custom.png")
           PY
-      - name: Download Morphe Desktop CLI
-        run: |
-          curl -fL --retry 3 --retry-delay 2 \
-            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.3.0-dev.3/morphe-desktop-2.3.0-dev.3-all.jar" \
-            -o morphe-desktop.jar
-          test -s morphe-desktop.jar
       - name: Inspect compatible patch options
         run: |
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"

@@ -22,12 +22,14 @@ SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
+EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
+NAVIGATION_RESOURCES = ROOT / "patches/src/main/resources/navigationbar/drawable"
 
 def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -67,6 +69,14 @@ SEEKBAR.write_text(seekbar, encoding="utf-8")
 for path in (SPLASH_PATCH, GLOW_RESOURCES):
     path.unlink()
 
+NAVIGATION_RESOURCES.mkdir(parents=True, exist_ok=True)
+for filename, content in (
+    ("vyra_navigation_home.xml", "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\" android:width=\"24dp\" android:height=\"24dp\" android:viewportWidth=\"24\" android:viewportHeight=\"24\"><path android:fillColor=\"#00000000\" android:strokeColor=\"#E5E7EB\" android:strokeWidth=\"1.75\" android:strokeLineCap=\"round\" android:strokeLineJoin=\"round\" android:pathData=\"M4.5,11.2 L12,4.8 L19.5,11.2 V18.5 A1.5,1.5 0,0 1,18,20 H14.5 V14.8 A2.5,2.5 0,0 0,9.5,14.8 V20 H6 A1.5,1.5 0,0 1,4.5,18.5 Z\"/></vector>"),
+    ("vyra_navigation_shorts.xml", "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\" android:width=\"24dp\" android:height=\"24dp\" android:viewportWidth=\"24\" android:viewportHeight=\"24\"><path android:fillColor=\"#00000000\" android:strokeColor=\"#E5E7EB\" android:strokeWidth=\"1.75\" android:strokeLineCap=\"round\" android:strokeLineJoin=\"round\" android:pathData=\"M9.5,3.5 H14.5 A3.5,3.5 0,0 1,18,7 V17 A3.5,3.5 0,0 1,14.5,20.5 H9.5 A3.5,3.5 0,0 1,6,17 V7 A3.5,3.5 0,0 1,9.5,3.5 Z\"/><path android:fillColor=\"#E5E7EB\" android:pathData=\"M10.8,9.8 L15,12 L10.8,14.2 Z\"/></vector>"),
+    ("vyra_navigation_subscriptions.xml", "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\" android:width=\"24dp\" android:height=\"24dp\" android:viewportWidth=\"24\" android:viewportHeight=\"24\"><path android:fillColor=\"#00000000\" android:strokeColor=\"#E5E7EB\" android:strokeWidth=\"1.75\" android:strokeLineCap=\"round\" android:strokeLineJoin=\"round\" android:pathData=\"M6.3,8.5 H17.7 A2.8,2.8 0,0 1,20.5,11.3 V16.7 A2.8,2.8 0,0 1,17.7,19.5 H6.3 A2.8,2.8 0,0 1,3.5,16.7 V11.3 A2.8,2.8 0,0 1,6.3,8.5 Z\"/><path android:fillColor=\"#00000000\" android:strokeColor=\"#E5E7EB\" android:strokeWidth=\"1.75\" android:strokeLineCap=\"round\" android:pathData=\"M7.5,5 H16.5\"/><path android:fillColor=\"#E5E7EB\" android:pathData=\"M10.8,11.8 L14.5,14 L10.8,16.2 Z\"/></vector>"),
+):
+    (NAVIGATION_RESOURCES / filename).write_text(content, encoding="utf-8")
+
 # VYRA glass defaults: leave stock navigation selected until the user enables Glass,
 # but make the VYRA capsule clear, fully rounded and animated when enabled.
 extension_settings = EXTENSION_SETTINGS.read_text(encoding="utf-8")
@@ -91,6 +101,75 @@ if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", Na
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
+# Inject the VYRA Home, Shorts and Subscriptions glyphs into real YouTube navigation views.
+java_source = EXTENSION_NAVIGATION.read_text(encoding="utf-8")
+drawable_import = "import android.graphics.drawable.ColorDrawable;" + chr(10)
+if java_source.count(drawable_import) != 1:
+    fail("NavigationBarPatch drawable import anchor changed")
+java_source = java_source.replace(drawable_import, drawable_import + "import android.graphics.drawable.Drawable;" + chr(10), 1)
+weak_import = "import java.lang.ref.WeakReference;" + chr(10)
+if java_source.count(weak_import) != 1:
+    fail("NavigationBarPatch WeakReference import anchor changed")
+java_source = java_source.replace(weak_import, weak_import + "import java.util.WeakHashMap;" + chr(10), 1)
+java_anchor = """    /**
+     * Injection point.
+     */
+    public static void navigationTabCreated(NavigationBar.NavigationButton button, View tabView) {
+        YouTubeGlassNavigationBar.navigationTabCreated(button, tabView);"""
+java_replacement = """    // VYRA replaces only Home, Shorts and Subscriptions glyphs in Glass mode.
+    // Create remains the native YouTube action and You keeps the real account avatar.
+    private static final Map<ImageView, Drawable> VYRA_ORIGINAL_NAV_ICONS = new WeakHashMap<>();
+
+    @Nullable
+    private static ImageView findVYRAIcon(View view) {
+        if (view instanceof ImageView image) return image;
+        if (!(view instanceof ViewGroup group)) return null;
+        ImageView best = null;
+        int bestArea = -1;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            ImageView candidate = findVYRAIcon(group.getChildAt(i));
+            if (candidate == null) continue;
+            int area = candidate.getWidth() * candidate.getHeight();
+            if (area > bestArea) { best = candidate; bestArea = area; }
+        }
+        return best;
+    }
+
+    private static void applyVYRAIcon(NavigationBar.NavigationButton button, View tabView) {
+        if (!Settings.NAVIGATION_BAR_GLASS.get()) return;
+        final String name;
+        if (button == NavigationBar.NavigationButton.HOME) name = "vyra_navigation_home";
+        else if (button == NavigationBar.NavigationButton.SHORTS) name = "vyra_navigation_shorts";
+        else if (button == NavigationBar.NavigationButton.SUBSCRIPTIONS) name = "vyra_navigation_subscriptions";
+        else return;
+        tabView.post(() -> {
+            View iconContainer = tabView.findViewById(YouTubeGlassNavigationBar.BUTTON_ICON);
+            ImageView icon = findVYRAIcon(iconContainer != null ? iconContainer : tabView);
+            if (icon == null) return;
+            int resourceId = icon.getResources().getIdentifier(name, "drawable", icon.getContext().getPackageName());
+            if (resourceId == 0) { Logger.printException(() -> "VYRA navigation drawable missing: " + name); return; }
+            VYRA_ORIGINAL_NAV_ICONS.putIfAbsent(icon, icon.getDrawable());
+            Drawable replacement = icon.getResources().getDrawable(resourceId, icon.getContext().getTheme()).mutate();
+            icon.setImageDrawable(replacement);
+        });
+    }
+
+    /**
+     * Injection point.
+     */
+    public static void navigationTabCreated(NavigationBar.NavigationButton button, View tabView) {
+        applyVYRAIcon(button, tabView);
+        YouTubeGlassNavigationBar.navigationTabCreated(button, tabView);"""
+if java_source.count(java_anchor) != 1:
+    fail("NavigationBarPatch navigationTabCreated hook anchor changed")
+java_source = java_source.replace(java_anchor, java_replacement, 1)
+EXTENSION_NAVIGATION.write_text(java_source, encoding="utf-8")
+
+if source.count("        copyResources(\"navigationbar\", ResourceGroup(\"drawable\", \"morphe_watch_later_selected.xml\"))") != 1:
+    fail("pinned navigation resource-copy anchor changed")
+source = source.replace("        copyResources(\"navigationbar\", ResourceGroup(\"drawable\", \"morphe_watch_later_selected.xml\"))", "        copyResources(\n            \"navigationbar\",\n            ResourceGroup(\n                \"drawable\",\n                \"morphe_watch_later_selected.xml\",\n                \"vyra_navigation_home.xml\",\n                \"vyra_navigation_shorts.xml\",\n                \"vyra_navigation_subscriptions.xml\"\n            )\n        )", 1)
+NAV.write_text(source, encoding="utf-8")
+
 old_group = '''        navPreferences += listOf(
             SwitchPreference("morphe_hide_navigation_new_content_dot"),
             SwitchPreference("morphe_navigation_bar_animations", summary = true),

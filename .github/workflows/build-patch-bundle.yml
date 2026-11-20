@@ -218,7 +218,27 @@ jobs:
           test -n "$PATCHES"
           java -jar morphe-desktop.jar list-patches --patches "$PATCHES" -f com.google.android.youtube --with-options | tee patch-list.txt
       - name: Patch and sign VYRA YouTube
+        env:
+          VYRA_KEYSTORE_BASE64: ${{ secrets.VYRA_KEYSTORE_BASE64 }}
+          VYRA_KEYSTORE_PASSWORD: ${{ secrets.VYRA_KEYSTORE_PASSWORD }}
+          VYRA_KEY_ALIAS: ${{ secrets.VYRA_KEY_ALIAS }}
+          VYRA_KEY_PASSWORD: ${{ secrets.VYRA_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          test -n "$VYRA_KEYSTORE_BASE64"
+          test -n "$VYRA_KEYSTORE_PASSWORD"
+          test -n "$VYRA_KEY_ALIAS"
+          test -n "$VYRA_KEY_PASSWORD"
+          KEYSTORE="$RUNNER_TEMP/vyra-release.keystore"
+          printf '%s' "$VYRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -v -keystore "$KEYSTORE" -storepass "$VYRA_KEYSTORE_PASSWORD" -alias "$VYRA_KEY_ALIAS" > vyra-keystore-info.txt
+          EXPECTED_CERT_SHA256="$(awk -F': ' '/SHA256:/{print $2; exit}' vyra-keystore-info.txt | tr -d ':')"
+          if ! [[ "$EXPECTED_CERT_SHA256" =~ ^[A-Fa-f0-9]{64}$ ]]; then
+            echo "Could not read the VYRA keystore SHA-256 certificate fingerprint."
+            exit 1
+          fi
+          printf '%s\n' "$EXPECTED_CERT_SHA256" > expected-cert-sha256.txt
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           java -jar morphe-desktop.jar patch \
             --patches "$PATCHES" \
@@ -230,6 +250,10 @@ jobs:
             --options "customName=VYRA YouTube" \
             --options "customIcon=$GITHUB_WORKSPACE/vyra-icon" \
             --options "appIcon=Custom" \
+            --keystore "$KEYSTORE" \
+            --keystore-password "$VYRA_KEYSTORE_PASSWORD" \
+            --keystore-entry-alias "$VYRA_KEY_ALIAS" \
+            --keystore-entry-password "$VYRA_KEY_PASSWORD" \
             --signer "VYRA Project" \
             --out "VYRA-YouTube-21.30.216.apk" \
             --striplibs arm64-v8a \
@@ -239,10 +263,17 @@ jobs:
           test -s "VYRA-YouTube-21.30.216.apk"
       - name: Verify APK signature and package
         run: |
+          set -euo pipefail
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.216.apk" | tee output-signature.txt
-          grep -qi "7cdb3134b740c64fd37628a8b9f8fbf5aef6e65267719098741a5ff858c94d92" output-signature.txt
+          EXPECTED_CERT_SHA256="$(cat expected-cert-sha256.txt)"
+          grep -qi "$EXPECTED_CERT_SHA256" output-signature.txt
+          if [ "$EXPECTED_CERT_SHA256" = "7cdb3134b740c64fd37628a8b9f8fbf5aef6e65267719098741a5ff858c94d92" ]; then
+            echo "Signing certificate matches the previously delivered APK." > signing-migration.txt
+          else
+            echo "Signing key changed from the previously delivered APK. Uninstall the old VYRA YouTube once, install this APK, then future in-app updates will work." > signing-migration.txt
+          fi
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
           "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | tee package-info.txt
           grep -q "name='app.vyra.youtube'" package-info.txt
@@ -251,7 +282,7 @@ jobs:
         run: |
           zip -j vyra-youtube-signed-delivery.zip \
             "VYRA-YouTube-21.30.216.apk" \
-            patch-result.json package-info.txt patch-list.txt
+            patch-result.json package-info.txt patch-list.txt output-signature.txt signing-migration.txt
       - uses: actions/upload-artifact@v4
         with:
           name: vyra-youtube-signed-apk

@@ -18,6 +18,7 @@ import androidx.core.content.FileProvider;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -72,9 +73,7 @@ public final class VYRAUpdateActivity extends Activity {
             return;
         }
         try (InputStream input = getResources().openRawResource(pageId)) {
-            byte[] bytes = new byte[input.available()];
-            int count = input.read(bytes);
-            String html = new String(bytes, 0, Math.max(0, count), java.nio.charset.StandardCharsets.UTF_8);
+            String html = readStream(input);
             setContentView(web);
             web.loadDataWithBaseURL("https://vyra.local/", html, "text/html", "UTF-8", null);
             checkForUpdate();
@@ -147,10 +146,20 @@ public final class VYRAUpdateActivity extends Activity {
                     || connection.getResponseCode() < 200 || connection.getResponseCode() > 299) {
                 throw new IllegalStateException("Güncelleme bilgisi alınamadı.");
             }
-            return new String(connection.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            try (InputStream input = connection.getInputStream()) {
+                return readStream(input);
+            }
         } finally {
             connection.disconnect();
         }
+    }
+
+    private static String readStream(InputStream input) throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int count;
+        while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+        return new String(output.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private void downloadAndVerify(String address, long expectedSize, String expectedHash) throws Exception {

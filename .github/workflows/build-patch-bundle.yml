@@ -218,8 +218,10 @@ jobs:
             --options "packageName=app.vyra.youtube" \
             --options "updatePermissions=true" \
             --options "updateProviders=true" \
+            --enable "Custom branding" \
             --options "customName=VYRA YouTube" \
             --options "customIcon=$GITHUB_WORKSPACE/vyra-icon" \
+            --options "appIcon=Custom" \
             --signer "VYRA Project" \
             --out "VYRA-YouTube-21.30.216.apk" \
             --striplibs arm64-v8a \

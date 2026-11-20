@@ -254,7 +254,6 @@ jobs:
             --keystore-entry-password "$VYRA_KEY_PASSWORD" \
             --signer "VYRA Project" \
             --out "VYRA-YouTube-21.30.217.apk" \
-            --striplibs arm64-v8a \
             --result-file "patch-result.json" \
             "stock-youtube.apk"
           jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null

@@ -52,6 +52,13 @@
 - [ ] Publish a signed APK only after all tests pass, with build provenance and checksum.
 
 
+## Verified glass work completed in the current branch
+
+- [x] Add an OFF-by-default VYRA master gate for the pinned navigation capsule and compatible miniplayer Glass renderers.
+- [x] Keep the original YouTube navigation when the master switch is OFF.
+- [x] Expose the master switch under VYRA Appearance and retain the upstream capsule controls.
+- [ ] This is a supported-surface subset only; it does not complete app-wide Liquid Glass.
+
 ## Milestone 2A — app-wide Liquid Glass (supersedes navigation-only completion)
 - [ ] Inventory verified runtime hooks for every supported UI surface in YouTube 21.30.216.
 - [ ] Implement persisted VYRA Liquid Glass master switch (OFF by default; OFF restores stock UI).

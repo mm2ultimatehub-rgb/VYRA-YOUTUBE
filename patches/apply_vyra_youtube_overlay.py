@@ -644,6 +644,7 @@ def rebrand_string_values(path: Path) -> None:
         value = value.replace("morphe.software/translate", "github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE")
         return match.group(1) + value + match.group(3)
     updated = re.sub(r'(<string\b[^>]*>)(.*?)(</string>)', replace_value, content, flags=re.DOTALL)
+    updated = re.sub(r'(?m)^([^\n]*VYRA[^\n]*?)[ \t]+$', r'\1', updated)
     path.write_text(updated, encoding="utf-8")
     ET.parse(path)
     if re.search(r'<string\b[^>]*>[^<]*Morphe', updated):

@@ -128,6 +128,56 @@ extension_settings = extension_settings.replace(
 
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
+# Route the native YouTube Lottie splash hook to the VYRA resource when enabled.
+theme_source = EXTENSION_THEME.read_text(encoding="utf-8")
+method_anchor = """    public static void setSplashAnimationLottie(LottieAnimationView view, int resourceId) {
+        try {
+            // The Morphe styles replace the YouTube logo animation with the Morphe one."""
+method_replacement = """    public static void setSplashAnimationLottie(LottieAnimationView view, int resourceId) {
+        try {
+            if (Settings.VYRA_SPLASH_SCREEN.get()) {
+                int vyraAnimation = ResourceUtils.getIdentifier(ResourceType.RAW, "vyra_startup_animation");
+                if (vyraAnimation != 0) {
+                    view.patch_setAnimation(vyraAnimation);
+                    return;
+                }
+            }
+            // The Morphe styles replace the YouTube logo animation with the Morphe one."""
+if theme_source.count(method_anchor) != 1:
+    fail("ThemePatch Lottie splash hook anchor changed")
+theme_source = theme_source.replace(method_anchor, method_replacement, 1)
+old_boolean = """        return SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get() != SplashScreenAnimationStyle.DISABLED && original;"""
+new_boolean = """        return (Settings.VYRA_SPLASH_SCREEN.get()
+                || SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get() != SplashScreenAnimationStyle.DISABLED) && original;"""
+if theme_source.count(old_boolean) != 1:
+    fail("ThemePatch splash visibility boolean anchor changed")
+theme_source = theme_source.replace(old_boolean, new_boolean, 1)
+old_int = """        if (SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get() != SplashScreenAnimationStyle.DISABLED || i != i2) {
+            return i;
+        }
+        return i - 1;"""
+new_int = """        if (Settings.VYRA_SPLASH_SCREEN.get()
+                || SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get() != SplashScreenAnimationStyle.DISABLED || i != i2) {
+            return i;
+        }
+        return i - 1;"""
+if theme_source.count(old_int) != 1:
+    fail("ThemePatch splash visibility integer anchor changed")
+theme_source = theme_source.replace(old_int, new_int, 1)
+old_type = """        SplashScreenAnimationStyle style = SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get();
+
+        if (style == SplashScreenAnimationStyle.DISABLED) {"""
+new_type = """        if (Settings.VYRA_SPLASH_SCREEN.get()) {
+            return 1; // Valid native Lottie splash style; the VYRA resource replaces its animation.
+        }
+        SplashScreenAnimationStyle style = SharedYouTubeSettings.SPLASH_SCREEN_STYLE.get();
+
+        if (style == SplashScreenAnimationStyle.DISABLED) {"""
+if theme_source.count(old_type) != 1:
+    fail("ThemePatch splash style selection anchor changed")
+theme_source = theme_source.replace(old_type, new_type, 1)
+EXTENSION_THEME.write_text(theme_source, encoding="utf-8")
+
 source = NAV.read_text(encoding="utf-8")
 splash_import = "import app.morphe.patches.youtube.misc.settings.settingsPatch" + chr(10)
 if source.count(splash_import) != 1:

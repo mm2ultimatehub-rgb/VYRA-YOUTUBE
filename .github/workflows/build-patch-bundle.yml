@@ -41,7 +41,9 @@ jobs:
           grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_opacity", 14' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
-          grep -q 'morphe_navigation_bar_glass", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_glass", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'Settings.VYRA_GLASS_MODE.get()' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java
+          grep -q 'vyra_glass_mode' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'NavigationBarStyle.DEFAULT' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'VYRA_SPLASH_SCREEN' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'VYRA_GLASS_MODE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java

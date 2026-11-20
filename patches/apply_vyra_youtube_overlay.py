@@ -7,6 +7,7 @@ fail closed rather than silently producing a partial patch.
 from pathlib import Path
 import sys
 import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 
 ROOT = Path.cwd()
@@ -33,41 +34,47 @@ for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, G
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
-# Keep upstream app-name/icon branding, but do not pull in Morphe's Rive/Lottie
-# splash patch yet. On the target 21.30.216 APK, that path is the first suspect
-# for the dangling $startup_animation_dark__9 resource alias. VYRA's native
-# splash will be integrated separately after the APK resource pipeline is stable.
+# Keep the native YouTube splash hook, but strip the newer Rive-only branch.
+# The VYRA animation is a self-contained Lottie composition supported by 21.30.216.
 branding = BRANDING.read_text(encoding="utf-8")
 splash_import = "import app.morphe.patches.youtube.layout.theme.splashAnimationPatch" + chr(10)
 if branding.count(splash_import) != 1:
     fail("expected one upstream splashAnimationPatch import")
-branding = branding.replace(splash_import, "", 1)
 splash_dependency = "            // Owns the hook that loads the startup animation." + chr(10) + "            splashAnimationPatch," + chr(10)
 if branding.count(splash_dependency) != 1:
     fail("expected one upstream splashAnimationPatch dependency")
-branding = branding.replace(splash_dependency, "", 1)
-if "splashAnimationPatch" in branding:
-    fail("splashAnimationPatch is still referenced by CustomBrandingPatch")
 BRANDING.write_text(branding, encoding="utf-8")
 
-# Seekbar color does not need to rewrite YouTube's animated splash resources.
-# Keep the seekbar feature, but remove its incidental splash-patch dependency.
 seekbar = SEEKBAR.read_text(encoding="utf-8")
 if seekbar.count(splash_import) != 1:
     fail("expected one splashAnimationPatch import in SeekbarColorPatch")
-seekbar = seekbar.replace(splash_import, "", 1)
 seekbar_dependency = "        // Owns the hook that loads the splash screen animation." + chr(10) + "        splashAnimationPatch," + chr(10)
 if seekbar.count(seekbar_dependency) != 1:
     fail("expected one splashAnimationPatch dependency in SeekbarColorPatch")
-seekbar = seekbar.replace(seekbar_dependency, "", 1)
-if "splashAnimationPatch" in seekbar:
-    fail("splashAnimationPatch is still referenced by SeekbarColorPatch")
 SEEKBAR.write_text(seekbar, encoding="utf-8")
 
-# Exclude only YouTube-specific splash patch definitions. The shared startup resource
-# patch must remain because YouTube Music branding still depends on it at compile time.
-for path in (SPLASH_PATCH, GLOW_RESOURCES):
-    path.unlink()
+splash = SPLASH_PATCH.read_text(encoding="utf-8")
+rive_dependency = "        startupAnimationResourcePatch,\n        glowMorpheAnimationResourcePatch"
+if splash.count(rive_dependency) != 1:
+    fail("expected one splash Rive resource dependency")
+splash = splash.replace(rive_dependency, "        startupAnimationResourcePatch", 1)
+rive_start = "        // The Rive styles are not available before 21.30:"
+rive_end = "        splashScreenStyleFingerprint.method.apply {"
+if splash.count(rive_start) != 1 or splash.count(rive_end) != 1:
+    fail("pinned Rive splash branch anchors changed")
+start_index = splash.index(rive_start)
+end_index = splash.index(rive_end, start_index)
+if end_index <= start_index:
+    fail("invalid Rive splash branch boundaries")
+splash = splash[:start_index] + splash[end_index:]
+SPLASH_PATCH.write_text(splash, encoding="utf-8")
+
+# Generate the approved VYRA liquid-glass Lottie animation into upstream raw resources.
+generator = ROOT.parent / "vyra-youtube/patches/generate_vyra_splash.py"
+raw_resources = ROOT / "patches/src/main/resources/custom-branding/raw"
+if not generator.is_file():
+    fail(f"missing VYRA splash generator: {generator}")
+subprocess.run([sys.executable, str(generator), str(VYRA_LOGO), str(raw_resources)], check=True)
 
 NAVIGATION_RESOURCES.mkdir(parents=True, exist_ok=True)
 for filename, content in (

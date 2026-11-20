@@ -2,7 +2,7 @@ name: Build VYRA patch bundle
 
 on:
   push:
-    branches: [main]
+    branches: [main, vyra-full-liquid-glass]
     paths-ignore: ['patches-bundle.json']
   workflow_dispatch:
 
@@ -38,6 +38,9 @@ jobs:
           grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/vyra_startup_animation.json
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
+          grep -q 'VYRA_LIQUID_GLASS' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'Settings.VYRA_LIQUID_GLASS.get()' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java
+          grep -q 'SwitchPreference("vyra_liquid_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
           grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_opacity", 14' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java

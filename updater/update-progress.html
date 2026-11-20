@@ -1292,14 +1292,19 @@
     telEl.textContent = fmtTR(speed / 1048576, 2) + ' MB/s · ' + (remaining === null ? 'Süre hesaplanıyor' : '~' + remaining + ' sn kaldı');
     setStatus('Güncelleme indiriliyor');
     if (state.lastP >= 1 && !state.downloadReady) {
-      state.phase = 'settling';
-      state.phaseStart = performance.now();
-      state.phaseDuration = 460;
-      setStatus('İndirme tamamlandı', 'Dosya doğrulandı, kurulum için hazır.');
-      state.downloadReady = true;
-      reBtn.disabled = false;
-      reBtn.textContent = 'Şimdi yükle';
+      setStatus('Dosya doğrulanıyor', 'İndirme tamamlandı; güvenlik kontrolü bekleniyor.');
     }
+  }
+
+  function setReady() {
+    if (state.lastP < 1) return;
+    state.downloadReady = true;
+    state.phase = 'settling';
+    state.phaseStart = performance.now();
+    state.phaseDuration = 460;
+    setStatus('İndirme tamamlandı', 'Dosya doğrulandı, kurulum için hazır.');
+    reBtn.disabled = false;
+    reBtn.textContent = 'Şimdi yükle';
   }
 
   function setError(message) {
@@ -1314,6 +1319,7 @@
 
   window.VYRAUpdater = Object.freeze({
     setProgress,
+    setReady,
     setStatus,
     setError,
     setPaused

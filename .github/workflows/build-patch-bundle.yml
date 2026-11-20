@@ -233,7 +233,7 @@ jobs:
           printf '%s' "$VYRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           test -s "$KEYSTORE"
           keytool -list -v -keystore "$KEYSTORE" -storepass "$VYRA_KEYSTORE_PASSWORD" -alias "$VYRA_KEY_ALIAS" > vyra-keystore-info.txt
-          EXPECTED_CERT_SHA256="$(awk -F': ' '/SHA256:/{print $2; exit}' vyra-keystore-info.txt | tr -d ':')"
+          EXPECTED_CERT_SHA256="$(awk -F': ' '/SHA256:/{print $2; exit}' vyra-keystore-info.txt | tr -d ':' | tr 'A-F' 'a-f')"
           if ! [[ "$EXPECTED_CERT_SHA256" =~ ^[A-Fa-f0-9]{64}$ ]]; then
             echo "Could not read the VYRA keystore SHA-256 certificate fingerprint."
             exit 1

@@ -334,6 +334,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
+          LATEST_TAG="$(gh release list --limit 100 --json tagName --jq '[.[] | select(.tagName | startswith("vyra-build-"))][0].tagName // empty')"
+          if [ -n "$LATEST_TAG" ]; then
+            LATEST_BUILD="${LATEST_TAG#vyra-build-}"
+            if [ "$LATEST_BUILD" -ge "$BUILD_NUMBER" ]; then
+              echo "A newer or equal VYRA release already exists ($LATEST_TAG); skipping stale build $BUILD_NUMBER."
+              exit 0
+            fi
+          fi
           gh release create "vyra-build-$BUILD_NUMBER" \
             "dist/VYRA-YouTube-21.30.216.apk#VYRA YouTube APK" \
             "dist/update-manifest.json#VYRA Update Manifest" \

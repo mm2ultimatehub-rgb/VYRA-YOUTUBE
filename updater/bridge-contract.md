@@ -9,6 +9,7 @@ Load the bundled asset from the app's local assets only (for example, `file:///a
 Android calls these functions through `evaluateJavascript`:
 
 - `window.VYRAUpdater.setProgress(downloadedBytes, totalBytes, speedBytesPerSecond)`
+- `window.VYRAUpdater.setReady()` — call only after exact size, SHA-256, package ID, and signing-certificate checks pass.
 - `window.VYRAUpdater.setStatus(message, detail)`
 - `window.VYRAUpdater.setPaused()`
 - `window.VYRAUpdater.setError(message)`

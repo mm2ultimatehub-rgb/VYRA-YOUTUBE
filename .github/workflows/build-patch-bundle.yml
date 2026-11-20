@@ -297,14 +297,14 @@ jobs:
     if: (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: vyra-youtube-signed-apk
-          path: dist
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: vyra-youtube-signed-apk
+          path: dist
       - name: Publish signed APK release
         env:
           GH_TOKEN: ${{ github.token }}

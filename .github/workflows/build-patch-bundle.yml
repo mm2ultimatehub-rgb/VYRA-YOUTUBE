@@ -299,15 +299,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.head_ref || github.ref_name }}
-          token: \${{ github.token }}
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
           name: vyra-youtube-signed-apk
           path: dist
       - name: Prepare verified update manifest
         env:
-          BUILD_NUMBER: \${{ github.run_number }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           APK="dist/VYRA-YouTube-21.30.216.apk"
           test -s "$APK"
@@ -331,14 +331,14 @@ jobs:
           jq -e --argjson build "$BUILD_NUMBER" '.build_number == $build and .package_name == "app.vyra.youtube" and (.sha256 | test("^[a-f0-9]{64}$")) and (.size_bytes > 0)' dist/update-manifest.json >/dev/null
       - name: Publish signed APK and update manifest
         env:
-          GH_TOKEN: \${{ github.token }}
-          BUILD_NUMBER: \${{ github.run_number }}
+          GH_TOKEN: ${{ github.token }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          gh release create "vyra-build-$BUILD_NUMBER" \\
-            "dist/VYRA-YouTube-21.30.216.apk#VYRA YouTube APK" \\
-            "dist/update-manifest.json#VYRA Update Manifest" \\
-            --title "VYRA YouTube build $BUILD_NUMBER" \\
-            --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER." \\
+          gh release create "vyra-build-$BUILD_NUMBER" \
+            "dist/VYRA-YouTube-21.30.216.apk#VYRA YouTube APK" \
+            "dist/update-manifest.json#VYRA Update Manifest" \
+            --title "VYRA YouTube build $BUILD_NUMBER" \
+            --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER." \
             --latest
 
   publish-status:

@@ -24,6 +24,7 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private val executor = Executors.newSingleThreadExecutor()
     private var verifiedApk: File? = null
+    private val statusUrl = "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/main/updater/update-status.json"
     private val manifestUrl = "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/main/updater/update-manifest.json"
     private val expectedPackage = "com.google.android.youtube"
 
@@ -60,6 +61,14 @@ class MainActivity : Activity() {
         status("Güncelleme kontrol ediliyor", "VYRA sürüm bilgisi alınıyor…")
         executor.execute {
             try {
+                val releaseStatus = JSONObject(readHttps(statusUrl))
+                if (releaseStatus.optString("status") != "published") {
+                    status("Henüz güncelleme yok", releaseStatus.optString(
+                        "message",
+                        "Şu anda yayınlanmış doğrulanmış bir APK bulunmuyor."
+                    ))
+                    return@execute
+                }
                 val json = JSONObject(readHttps(manifestUrl))
                 val pkg = json.getString("package_name")
                 require(pkg == expectedPackage) { "Beklenmeyen paket adı." }

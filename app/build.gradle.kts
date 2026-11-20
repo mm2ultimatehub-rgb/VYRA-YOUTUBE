@@ -15,10 +15,23 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        create("release") {
+            val storePath = System.getenv("VYRA_KEYSTORE_FILE")
+            if (!storePath.isNullOrBlank()) {
+                storeFile = file(storePath)
+                storePassword = System.getenv("VYRA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("VYRA_KEY_ALIAS")
+                keyPassword = System.getenv("VYRA_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug { applicationIdSuffix = ".debug" }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

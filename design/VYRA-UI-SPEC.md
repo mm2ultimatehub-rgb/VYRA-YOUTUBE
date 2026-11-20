@@ -86,3 +86,38 @@
 - `vyra_splash_liquid.mp4`
 
 These references were supplied in the VYRA starter/mockup archives. Keep originals intact; use resized derivatives for Android resources and retain the source references for visual comparison.
+
+## VYRA Full Liquid Glass system — new approved scope
+
+The previous bottom-navigation-only prototype scope is superseded by this requirement. VYRA Liquid Glass must be a coherent, app-wide visual layer, not a navigation-bar skin.
+
+### Global material contract
+- Use a black/graphite foundation with clear silver glass; no purple/neon styling.
+- Apply translucent glass material to YouTube-owned UI surfaces throughout Home/feed, search, player controls and sheets, Shorts controls, subscriptions, Library, profile/You, and VYRA settings.
+- Glass surfaces use layered translucency, background sampling/blur where supported, a fine silver rim, restrained specular highlights, soft elevation, and consistent corner radii. Avoid opaque dark slabs.
+- Preserve readable contrast and text/icon legibility. Use a non-blur translucent fallback on devices or surfaces where blur is unavailable or too expensive.
+- Do not blur, tint, crop, or otherwise alter video frames, thumbnails, channel artwork, or user-provided media. Glass applies to UI chrome and panels only.
+- Preserve native YouTube actions, accessibility labels, focus/keyboard behavior, scrolling, playback, gestures, and account flows.
+
+### Required screen coverage
+- Home/feed: app bars, search affordance, category chips, feed cards' UI chrome, overflow sheets, dialogs, and bottom navigation.
+- Search: search field, filters/chips, suggestion and history surfaces, result actions, and menus.
+- Player: player overlay controls, action rows, channel/description panels, settings sheets, quality/captions/speed menus, and Up next panels.
+- Shorts: action rail surfaces, creator/metadata overlays, comments/share/remix sheets, and menus.
+- Subscriptions: header controls, filters, feed actions, and menus.
+- Library and Profile/You: cards, list containers, action surfaces, account/settings entry points, and dialogs.
+- Settings and VYRA MOD: preference rows, dialogs, selectors, sliders, and preview surfaces.
+
+### Master control and behavior
+- Add one persisted VYRA Liquid Glass master switch under YouTube Settings > VYRA MOD.
+- Master switch defaults OFF to preserve stock YouTube on first launch. OFF must restore original view backgrounds, elevations, and navigation appearance.
+- When ON, apply the glass material consistently to every verified supported surface. Do not expose a screen as complete until its runtime hooks are implemented and tested.
+- Provide global glass opacity/intensity and blur strength controls only where they are actually wired to the runtime renderer. Provide a reduced-motion / reduced-transparency fallback and honor Android accessibility settings.
+- Keep navigation-specific shape, animation, and sizing controls as refinements, not as the whole Liquid Glass feature.
+
+### Implementation and verification rules
+- Build a screen-by-screen hook inventory against the pinned YouTube 21.30.216 and Morphe Patches 2.3.0 sources before editing runtime behavior.
+- Use narrowly scoped, version-guarded hooks; fail closed when an upstream fingerprint changes.
+- Avoid blind global resource replacement and avoid changing server-driven content layouts.
+- Add runtime tests or deterministic patch checks for each screen family and for master ON/OFF restoration.
+- The .mpp bundle is only the patch package. A release APK is separate and must be built from a clean matching YouTube APK, signed, installed, launched, and smoke-tested before being called complete.

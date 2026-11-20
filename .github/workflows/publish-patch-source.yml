@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: publish-vyra-patch-source
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   actions: read

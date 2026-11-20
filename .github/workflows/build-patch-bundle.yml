@@ -277,8 +277,8 @@ jobs:
         run: |
           APK="dist/VYRA-YouTube-21.30.216.apk"
           test -s "$APK"
-          gh release create "vyra-build-$BUILD_NUMBER" "$APK#VYRA YouTube APK" \\
-            --title "VYRA YouTube build $BUILD_NUMBER" \\
+          gh release create "vyra-build-$BUILD_NUMBER" "$APK#VYRA YouTube APK" \
+            --title "VYRA YouTube build $BUILD_NUMBER" \
             --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER."
       - name: Publish verified update manifest
         env:
@@ -301,7 +301,7 @@ jobs:
             "release_notes": "VYRA YouTube build $BUILD_NUMBER"
           }
           EOF
-          printf '{ "status": "published", "message": "Yeni VYRA sürümü yayınlandı." }\\n' > updater/update-status.json
+          printf '%s\n' '{ "status": "published", "message": "Yeni VYRA sürümü yayınlandı." }' > updater/update-status.json
           python3 -m json.tool updater/update-manifest.json >/dev/null
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

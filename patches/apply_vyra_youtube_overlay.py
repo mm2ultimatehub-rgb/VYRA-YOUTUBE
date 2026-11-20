@@ -249,7 +249,15 @@ java_replacement = """    // VYRA replaces only Home, Shorts and Subscriptions g
     }
 
     private static void applyVYRAIcon(NavigationBar.NavigationButton button, View tabView) {
-        if (!Settings.NAVIGATION_BAR_GLASS.get()) return;
+        if (!Settings.NAVIGATION_BAR_GLASS.get()) {
+            View iconContainer = tabView.findViewById(YouTubeGlassNavigationBar.BUTTON_ICON);
+            ImageView icon = findVYRAIcon(iconContainer != null ? iconContainer : tabView);
+            if (icon != null) {
+                Drawable original = VYRA_ORIGINAL_NAV_ICONS.get(icon);
+                if (original != null) icon.setImageDrawable(original);
+            }
+            return;
+        }
         final String name;
         if (button == NavigationBar.NavigationButton.HOME) name = "vyra_navigation_home";
         else if (button == NavigationBar.NavigationButton.SHORTS) name = "vyra_navigation_shorts";

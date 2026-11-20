@@ -260,6 +260,8 @@ jobs:
           jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null
           test -s "VYRA-YouTube-21.30.217.apk"
       - name: Verify APK signature and package
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
@@ -276,7 +278,8 @@ jobs:
           "$AAPT" dump badging "VYRA-YouTube-21.30.217.apk" | tee package-info.txt
           grep -q "name='app.vyra.youtube'" package-info.txt
           grep -q "versionName='21.30.217'" package-info.txt
-          grep -q "versionCode='1561187873'" package-info.txt
+          EXPECTED_VERSION_CODE=$((1561187872 + BUILD_NUMBER - 203))
+          grep -q "versionCode='$EXPECTED_VERSION_CODE'" package-info.txt
           grep -q "application-label:'VYRA YouTube'" package-info.txt
       - name: Prepare signed VYRA delivery
         run: |

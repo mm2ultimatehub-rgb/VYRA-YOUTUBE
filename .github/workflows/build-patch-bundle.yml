@@ -44,6 +44,10 @@ jobs:
           grep -q 'morphe_navigation_bar_glass", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'NavigationBarStyle.DEFAULT' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'VYRA_SPLASH_SCREEN' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'VYRA_GLASS_MODE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'styleVYRAPlayerControl' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/LegacyPlayerControlsPatch.java
+          grep -q 'toolbarGlass' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/WideSearchBarPatch.java
+          grep -q 'initializeTopControl(EXTENSION_ADD_ON_API_CLASS_DESCRIPTOR)' patches/src/main/kotlin/app/morphe/patches/youtube/misc/playercontrols/LegacyPlayerControlsPatch.kt
           grep -q 'vyra_startup_animation.json' patches/src/main/kotlin/app/morphe/patches/shared/layout/branding/StartupAnimationResourcePatch.kt
           grep -q 'vyra_startup_animation' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java
           grep -q 'SwitchPreference("vyra_splash_screen"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt

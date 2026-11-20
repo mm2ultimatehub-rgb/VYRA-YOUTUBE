@@ -182,6 +182,22 @@ for path, title, summary in resources:
     path.write_text(xml, encoding="utf-8")
     ET.parse(path)
 
+# Give every VYRA build a monotonically increasing Android versionCode and
+# a VYRA-owned versionName. Build 203 is the previously delivered baseline.
+clone_patch = UPSTREAM / "patches/src/main/kotlin/app/morphe/patches/all/misc/clone/CloneAppPatch.kt"
+clone_source = clone_patch.read_text(encoding="utf-8")
+baseline_code = 1561187872
+baseline_build = 203
+next_version_code = baseline_code + (int(build_number) - baseline_build)
+if next_version_code <= baseline_code:
+    fail("VYRA build number must be newer than the previously delivered build")
+clone_anchor = '            manifest.root.setAttribute("package", newPackageName)'
+clone_replacement = clone_anchor + f'''
+            manifest.root.setAttribute("android:versionCode", "{next_version_code}")
+            manifest.root.setAttribute("android:versionName", "21.30.217")'''
+clone_source = replace_once(clone_source, clone_anchor, clone_replacement, "monotonic Android app version")
+clone_patch.write_text(clone_source, encoding="utf-8")
+
 # Rebrand every translated string resource, not only English and Turkish.
 # Resource keys and implementation/package names remain untouched.
 localized_root = UPSTREAM / "patches/src/main/resources/addresources"

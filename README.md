@@ -22,7 +22,7 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 
 ## Approved prototype scope
 - `Sıvı Cam Alt Menü.html` is a reference only for the bottom navigation capsule. Only its five-tab menu, central Create action, glass selection indicator, and translucent capsule are in scope; its demo page bodies and theme demo are not part of the app.
-- `yukleme-animasyonu.html` is a reference only for a future update/download progress indicator (glass orb, ring, percentage, completion state). Its timed demo progress is not used; real progress must come from the actual download operation.
+- `updater/update-progress.html` is the VYRA liquid-glass update progress surface. It accepts real byte progress from a trusted Android bridge and contains no active simulated download timer. The original root HTML files remain visual references.
 - The stock YouTube navigation remains the default. When the user enables Glass, VYRA defaults are a clearer capsule (opacity 14/100), rounded ends, and navigation animations enabled.
 
 ## Automatic patch-source updates
@@ -54,3 +54,9 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - `.github/workflows/`: validation and patch-bundle workflows
 
 See [the roadmap](docs/ROADMAP.md) for the remaining implementation and verification work.
+
+## VYRA updater status
+- The updater UI, manifest schema, and Android bridge contract are in `updater/`.
+- The native Android downloader/installer is not implemented in this repository because there is no Android application module here yet.
+- Current automated releases publish `.mpp` patch bundles only. These are not APKs and must never be passed to Android's package installer.
+- APK installation must wait for native size/SHA-256/package/signature verification and Android's user-confirmed package installer flow.

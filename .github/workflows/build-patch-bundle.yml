@@ -319,6 +319,7 @@ jobs:
       - name: Publish verified update manifest
         env:
           BUILD_NUMBER: ${{ github.run_number }}
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           APK="dist/VYRA-YouTube-21.30.216.apk"
           SHA256="$(sha256sum "$APK" | awk '{print $1}')"

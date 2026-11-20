@@ -159,6 +159,14 @@ layers = [
                          frame(190,[100],[100],True), frame(480,[100]))),
 ]
 
+# Explicit opaque black backdrop keeps the VYRA design consistent in light and dark themes.
+layers.append({
+    "ddd": 0, "ind": 7, "ty": 1, "nm": "VYRA black background",
+    "sw": W, "sh": H, "sc": "#000000",
+    "ks": transform([W/2, H/2, 0], anchor=(W/2, H/2, 0)),
+    "ao": 0, "ip": 0, "op": FRAMES, "st": 0, "bm": 0,
+})
+
 composition = {
     "v": "5.12.1", "fr": FPS, "ip": 0, "op": FRAMES, "w": W, "h": H,
     "nm": "VYRA Liquid Glass Splash", "ddd": 0, "bg": "#000000",
@@ -166,7 +174,7 @@ composition = {
 }
 serialized = json.dumps(composition, separators=(",",":"), ensure_ascii=False)
 validated = json.loads(serialized)
-assert len(validated["layers"]) == 6 and len(validated["assets"]) == 6
+assert len(validated["layers"]) == 7 and len(validated["assets"]) == 6
 assert all(a["p"].startswith("data:image/png;base64,") for a in validated["assets"])
 filename = "vyra_startup_animation.json"
 (out_dir/filename).write_text(serialized, encoding="utf-8")

@@ -108,6 +108,12 @@ The previous bottom-navigation-only prototype scope is superseded by this requir
 - Library and Profile/You: cards, list containers, action surfaces, account/settings entry points, and dialogs.
 - Settings and VYRA MOD: preference rows, dialogs, selectors, sliders, and preview surfaces.
 
+### Verified runtime coverage — current pinned baseline
+
+The pinned Morphe 2.3.0 source provides a real Glass capsule renderer for the bottom navigation and a compatible Glass miniplayer renderer. The current VYRA implementation adds an OFF-by-default master gate around those two verified surfaces. Enabling it does not claim to glass-style every YouTube screen.
+
+No general-purpose, app-wide blur/material hook has been verified for the target YouTube Litho surfaces. Home/feed cards, Search, Shorts action rail, Subscriptions, Library, Profile, dialogs, and menus remain unimplemented until a safe component-specific hook is identified and tested. Do not simulate this with a global overlay, blanket background replacement, or fake settings.
+
 ### Master control and behavior
 - Add one persisted VYRA Liquid Glass master switch under YouTube Settings > VYRA MOD.
 - Master switch defaults OFF to preserve stock YouTube on first launch. OFF must restore original view backgrounds, elevations, and navigation appearance.

@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>V Sıvı Cam Akıcı Yükleme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Obsidian ve buzlu cam tasarım değişkenleri */
+  :root {
+    --bg: #050506;
+    --fg: #ffffff;
+    --fg-2: rgba(255, 255, 255, 0.65);
+    --fg-3: rgba(255, 255, 255, 0.36);
+    --accent: #ffffff;
+    --accent-rgb: 255, 255, 255;
+    --accent-glow: rgba(255, 255, 255, 0.35);
+    --orb-1: rgba(255, 255, 255, 0.14);
+    --orb-2: rgba(155, 160, 175, 0.25);
+    --orb-3: rgba(215, 220, 230, 0.11);
+    --spec-x: 35%;
+    --spec-y: 24%;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color-scheme: dark;
+  }
+
+  /* Buz cam teması */
+  [data-theme="ice"] {
+    --accent: #a5e8ff;
+    --accent-rgb: 165, 232, 255;
+    --accent-glow: rgba(125, 211, 252, 0.44);
+    --orb-1: rgba(56, 189, 248, 0.21);
+    --orb-2: rgba(129, 140, 248, 0.22);
+    --orb-3: rgba(186, 230, 253, 0.12);
+  }
+
+  /* Zümrüt cam teması */
+  [data-theme="emerald"] {
+    --accent: #86efac;
+    --accent-rgb: 134, 239, 172;
+    --accent-glow: rgba(74, 222, 128, 0.40);
+    --orb-1: rgba(52, 211, 153, 0.19);
+    --orb-2: rgba(45, 212, 191, 0.19);
+    --orb-3: rgba(167, 243, 208, 0.11);
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Önizleme yüksekliğinin çökmesini önleyen açık boyut kuralları */
+  html,
+  body {
+    height: 100%;
+    min-height: 560px;
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .stage {
+    position: relative;
+    min-height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow: hidden;
+    isolation: isolate;
+    background: radial-gradient(115% 82% at 50% 0%, #1b1c21 0%, #09090c 56%, #050506 100%);
+    transition: background 0.45s ease;
+  }
+
+  /* Arka planda yavaşça süzülen ışık küreleri */
+  .o {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(48px);
+    pointer-events: none;
+    z-index: -2;
+    will-change: transform;
+    transition: background 0.5s ease;
+  }
+
+  .o1 {
+    width: 280px;
+    height: 280px;
+    left: 8%;
+    top: 18%;
+    background: var(--orb-1);
+    animation: d1 13s ease-in-out infinite alternate;
+  }
+
+  .o2 {
+    width: 250px;
+    height: 250px;
+    right: 7%;
+    top: 44%;
+    background: var(--orb-2);
+    animation: d2 15s ease-in-out infinite alternate;
+  }
+
+  .o3 {
+    width: 200px;
+    height: 200px;
+    left: 42%;
+    bottom: 6%;
+    background: var(--orb-3);
+    animation: d3 17s ease-in-out infinite alternate;
+  }
+
+  @keyframes d1 { to { transform: translate3d(115px, 32px, 0); } }
+  @keyframes d2 { to { transform: translate3d(-125px, -42px, 0); } }
+  @keyframes d3 { to { transform: translate3d(-85px, -48px, 0); } }
+
+  /* İnce film gren dokusu */
+  .grain {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.065;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* Buzlu cam küre */
+  .orb {
+    position: relative;
+    width: min(304px, 78vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018) 68%, rgba(0, 0, 0, 0.36) 100%);
+    -webkit-backdrop-filter: blur(22px) saturate(135%);
+    backdrop-filter: blur(22px) saturate(135%);
+    box-shadow:
+      inset 0 2px 1px rgba(255, 255, 255, 0.38),
+      inset 0 -24px 40px rgba(var(--accent-rgb), 0.06),
+      0 30px 60px rgba(0, 0, 0, 0.8);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+    will-change: transform;
+    user-select: none;
+  }
+
+  /* Üst cam kavis parlaması */
+  .orb::before {
+    content: "";
+    position: absolute;
+    left: 14%;
+    top: 6%;
+    width: 56%;
+    height: 32%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0));
+    transform: rotate(-24deg);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* İnce cam kenar parlaklığı */
+  .orb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 1.5px;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.84),
+      rgba(255, 255, 255, 0.05) 36%,
+      rgba(255, 255, 255, 0.05) 64%,
+      rgba(255, 255, 255, 0.5)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .orb-spec {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.04) 35%,
+      transparent 65%
+    );
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Harmonik dalga halkası ve tik çizgileri */
+  .orb svg.ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    z-index: 2;
+  }
+
+  .tk {
+    stroke: var(--accent);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    opacity: 0.14;
+    transition: opacity 0.2s ease, stroke 0.4s ease;
+  }
+
+  .tk.on {
+    opacity: 0.86;
+  }
+
+  .tr {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.085);
+    stroke-width: 3.4;
+  }
+
+  .core {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.4s ease;
+  }
+
+  .glow {
+    fill: none;
+    stroke: var(--accent-glow);
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.4s ease;
+  }
+
+  .bead {
+    fill: #ffffff;
+  }
+
+  .bead-halo {
+    fill: var(--accent);
+    transition: fill 0.4s ease;
+  }
+
+  /* Merkez katmanı: yüzde sayacı ve sıvı cam 'V' logosu */
+  .ctr {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .num {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    font-size: clamp(46px, 14vw, 62px);
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: opacity 0.28s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .num small {
+    font-size: 0.35em;
+    font-weight: 400;
+    color: var(--fg-2);
+    margin: 0.3em 0 0 0.12em;
+  }
+
+  .v-stage {
+    position: absolute;
+    width: 62%;
+    height: 62%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.66) rotate(0deg);
+    transform-origin: 50% 50%;
+    will-change: transform, opacity;
+  }
+
+  .orb.done .num {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  .orb.done .v-stage {
+    opacity: 1;
+  }
+
+  .v-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.82));
+  }
+
+  /* 3B sıvı cam V kırılma ve yansıma katmanları */
+  .v-shell {
+    fill: url(#vGlassBody);
+    stroke: url(#vGlassRim);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .v-inner-depth {
+    fill: url(#vSaddleShadow);
+  }
+
+  .v-left-refraction {
+    fill: url(#vLeftRefract);
+    opacity: 0.92;
+  }
+
+  .v-right-refraction {
+    fill: url(#vRightRefract);
+    opacity: 0.85;
+  }
+
+  .v-top-rim {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.92);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .v-saddle-rim {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.56);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+  }
+
+  .v-spec-l {
+    fill: url(#vSpecGrad);
+  }
+
+  .v-spec-r {
+    fill: url(#vSpecGrad);
+    opacity: 0.78;
+  }
+
+  .v-sheen {
+    fill: url(#vSheenGrad);
+    opacity: 0;
+  }
+
+  /* Durum ve telemetri metinleri */
+  .st {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-align: center;
+  }
+
+  .mb {
+    margin: 0;
+    font-size: 13px;
+    color: var(--fg-2);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .telemetry {
+    margin: 0;
+    font-size: 12px;
+    color: var(--fg-3);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    min-height: 16px;
+  }
+
+  /* Tema ve hız kontrol çubuğu */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 2px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+
+  .pill {
+    border: 0;
+    background: transparent;
+    color: var(--fg-2);
+    font: 500 11.5px var(--font);
+    padding: 6px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .pill:hover {
+    color: var(--fg);
+  }
+
+  .pill.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--fg);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .pill:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 2px;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .sep {
+    width: 1px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Tekrar oynat cam butonu */
+  .re {
+    position: relative;
+    margin-top: 4px;
+    height: 44px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 22px;
+    overflow: hidden;
+    color: #fff;
+    font: 500 14px var(--font);
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 10px 24px rgba(0, 0, 0, 0.6);
+    transition: background 0.3s ease, opacity 0.3s ease;
+  }
+
+  .re::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.05) 40%,
+      rgba(255, 255, 255, 0.05) 60%,
+      rgba(255, 255, 255, 0.4)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+
+  .re:hover:not([disabled]) {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .re:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 3px;
+  }
+
+  .re[disabled] {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .rpl {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    margin: -6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+  }
+
+  .sp {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 7px var(--accent-glow);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  .wave {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o { animation: none; }
+    .orb, .v-stage, .num, .pill, .re { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="stage" id="stage">
+  <div class="o o1"></div>
+  <div class="o o2"></div>
+  <div class="o o3"></div>
+  <div class="grain"></div>
+
+  <section class="card" aria-label="V Sıvı Cam Akıcı Yükleme">
+    <div class="orb" id="orb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="İndirme ilerlemesi">
+      <div class="orb-spec"></div>
+
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <filter id="bl" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.2"/>
+          </filter>
+        </defs>
+        <g id="ticks"></g>
+        <circle class="tr" cx="100" cy="100" r="84"/>
+        <path class="glow" id="glow" d="" filter="url(#bl)"/>
+        <path class="core" id="core" d=""/>
+        <circle class="bead-halo" id="halo" r="9" opacity="0" filter="url(#bl)"/>
+        <circle class="bead" id="bead" r="4.6" opacity="0"/>
+      </svg>
+
+      <div class="ctr">
+        <div class="num"><span id="n">0</span><small>%</small></div>
+
+        <!-- Tamamlandığında tik gibi yatıp oynakça dönerek dik 'V' formuna oturan logo -->
+        <div class="v-stage" id="vStage" aria-hidden="true">
+          <svg class="v-svg" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="vGlassBody" x1="14%" y1="8%" x2="86%" y2="96%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.56"/>
+                <stop offset="22%" stop-color="#c8ced8" stop-opacity="0.25"/>
+                <stop offset="50%" stop-color="#343840" stop-opacity="0.16"/>
+                <stop offset="78%" stop-color="#e8edf5" stop-opacity="0.40"/>
+                <stop offset="100%" stop-color="#696e78" stop-opacity="0.24"/>
+              </linearGradient>
+
+              <linearGradient id="vGlassRim" x1="12%" y1="8%" x2="88%" y2="94%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.96)"/>
+                <stop offset="28%" stop-color="rgba(255,255,255,0.34)"/>
+                <stop offset="54%" stop-color="rgba(255,255,255,0.12)"/>
+                <stop offset="82%" stop-color="rgba(255,255,255,0.86)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.48)"/>
+              </linearGradient>
+
+              <radialGradient id="vSaddleShadow" cx="55%" cy="42%" r="56%">
+                <stop offset="0%" stop-color="rgba(8,9,12,0.84)"/>
+                <stop offset="60%" stop-color="rgba(42,46,54,0.34)"/>
+                <stop offset="100%" stop-color="rgba(225,232,242,0.12)"/>
+              </radialGradient>
+
+              <linearGradient id="vLeftRefract" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.38)"/>
+                <stop offset="55%" stop-color="rgba(160,168,182,0.10)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.24)"/>
+              </linearGradient>
+
+              <linearGradient id="vRightRefract" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.30)"/>
+                <stop offset="55%" stop-color="rgba(120,128,142,0.07)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.20)"/>
+              </linearGradient>
+
+              <linearGradient id="vSpecGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.92)"/>
+                <stop offset="65%" stop-color="rgba(255,255,255,0.24)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </linearGradient>
+
+              <linearGradient id="vSheenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+                <stop offset="50%" stop-color="rgba(255,255,255,0.78)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </linearGradient>
+
+              <clipPath id="vClip">
+                <path id="vClipPath" d=""/>
+              </clipPath>
+            </defs>
+
+            <path class="v-shell" id="vBody" d=""/>
+
+            <g clip-path="url(#vClip)">
+              <path class="v-inner-depth" id="vCore" d=""/>
+              <path class="v-left-refraction" id="vLeftBand" d=""/>
+              <path class="v-right-refraction" id="vRightBand" d=""/>
+              <ellipse class="v-spec-l" id="vSpecL" cx="29.5" cy="30.5" rx="11" ry="4.2" transform="rotate(-28 29.5 30.5)"/>
+              <ellipse class="v-spec-r" id="vSpecR" cx="92.5" cy="27.5" rx="9" ry="3.6" transform="rotate(-16 92.5 27.5)"/>
+              <rect class="v-sheen" id="vSheen" x="-85" y="-25" width="56" height="170" transform="rotate(26 60 60)"/>
+            </g>
+
+            <path class="v-top-rim" id="vRim" d=""/>
+            <path class="v-saddle-rim" id="vSubRim" d=""/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="st" id="st">Bağlanıyor…</p>
+    <p class="mb" id="mb">0,0 / 48,0 MB</p>
+    <p class="telemetry" id="telemetry">0,0 MB/s · Süre hesaplanıyor</p>
+
+    <div class="toolbar" role="group" aria-label="Tema ve hız seçenekleri">
+      <button type="button" class="pill active" data-theme-btn="obsidian">
+        <span class="swatch" style="background:#ffffff"></span>Saf Cam
+      </button>
+      <button type="button" class="pill" data-theme-btn="ice">
+        <span class="swatch" style="background:#7dd3fc"></span>Buz
+      </button>
+      <button type="button" class="pill" data-theme-btn="emerald">
+        <span class="swatch" style="background:#6ee7b7"></span>Zümrüt
+      </button>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" class="pill" id="speedBtn" aria-pressed="false">1× Hız</button>
+    </div>
+
+    <button type="button" class="re" id="re" disabled>Tekrar oynat</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const stage = document.getElementById('stage');
+  const orb = document.getElementById('orb');
+  const core = document.getElementById('core');
+  const glow = document.getElementById('glow');
+  const bead = document.getElementById('bead');
+  const halo = document.getElementById('halo');
+  const nEl = document.getElementById('n');
+  const stEl = document.getElementById('st');
+  const mbEl = document.getElementById('mb');
+  const telEl = document.getElementById('telemetry');
+  const reBtn = document.getElementById('re');
+  const speedBtn = document.getElementById('speedBtn');
+  const ticksG = document.getElementById('ticks');
+  const themeBtns = Array.from(document.querySelectorAll('[data-theme-btn]'));
+
+  const vStage = document.getElementById('vStage');
+  const vBody = document.getElementById('vBody');
+  const vClipPath = document.getElementById('vClipPath');
+  const vCore = document.getElementById('vCore');
+  const vLeftBand = document.getElementById('vLeftBand');
+  const vRightBand = document.getElementById('vRightBand');
+  const vSpecL = document.getElementById('vSpecL');
+  const vSpecR = document.getElementById('vSpecR');
+  const vSheen = document.getElementById('vSheen');
+  const vRim = document.getElementById('vRim');
+  const vSubRim = document.getElementById('vSubRim');
+
+  const TOTAL_MB = 48.0;
+  const R = 84;
+  const TICKS = 60;
+  const RING_SAMPLES = 156;
+
+  // Tik ve daire açılarını bir kez önceden hesaplayarak her karedeki trigonometrik yükü azaltır
+  const tickMeta = [];
+  for (let i = 0; i < TICKS; i++) {
+    const a = (i / TICKS) * Math.PI * 2 - Math.PI / 2;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    const rOut = i % 5 ? 97 : 99;
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('class', 'tk');
+    line.setAttribute('x1', (100 + cos * 94).toFixed(2));
+    line.setAttribute('y1', (100 + sin * 94).toFixed(2));
+    line.setAttribute('x2', (100 + cos * rOut).toFixed(2));
+    line.setAttribute('y2', (100 + sin * rOut).toFixed(2));
+    ticksG.appendChild(line);
+    tickMeta.push({ el: line, on: false });
+  }
+
+  const ringAngles = new Float32Array(RING_SAMPLES + 1);
+  const ringCos = new Float32Array(RING_SAMPLES + 1);
+  const ringSin = new Float32Array(RING_SAMPLES + 1);
+  for (let i = 0; i <= RING_SAMPLES; i++) {
+    const u = i / RING_SAMPLES;
+    const a = u * Math.PI * 2 - Math.PI / 2;
+    ringAngles[i] = u * Math.PI * 2;
+    ringCos[i] = Math.cos(a);
+    ringSin[i] = Math.sin(a);
+  }
+
+  // Tek birleşik animasyon durumu (tek rAF döngüsüyle yönetilir)
+  const state = {
+    phase: 'connecting', // 'connecting' | 'downloading' | 'settling' | 'revealing' | 'done'
+    speedMult: 1,
+    phaseStart: 0,
+    phaseDuration: 600,
+    lastP: 0,
+    lastT: 0,
+    lastPct: -1,
+    lastMbText: '',
+    lastTelText: '',
+    lastRingD: '',
+    lastBeadX: '',
+    lastBeadY: '',
+    lastBeadOp: '',
+    lastVKey: '',
+    lastStageTransform: '',
+    lastStageOpacity: '',
+    reEnableAt: 0
+  };
+
+  function easeInOutCubic(x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
+
+  function easeOutBack(x) {
+    const c1 = 1.75;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+  }
+
+  function fmtTR(num, dec) {
+    return num.toFixed(dec).replace('.', ',');
+  }
+
+  function setTicksForProgress(p) {
+    const activeCount = p <= 0.002 ? 0 : Math.floor(p * TICKS + 0.0001);
+    for (let j = 0; j < TICKS; j++) {
+      const shouldBeOn = j < activeCount;
+      if (tickMeta[j].on !== shouldBeOn) {
+        tickMeta[j].on = shouldBeOn;
+        tickMeta[j].el.classList.toggle('on', shouldBeOn);
+      }
+    }
+  }
+
+  // Harmonik dalgalı ilerleme halkasını günceller (yalnızca değiştiğinde DOM'a yazar)
+  function updateRing(p, now, ampFactor) {
+    setTicksForProgress(p);
+
+    if (p <= 0.002) {
+      if (state.lastRingD !== '') {
+        state.lastRingD = '';
+        core.setAttribute('d', '');
+        glow.setAttribute('d', '');
+      }
+      if (state.lastBeadOp !== '0') {
+        state.lastBeadOp = '0';
+        bead.setAttribute('opacity', '0');
+        halo.setAttribute('opacity', '0');
+      }
+      return;
+    }
+
+    const amp = 3.1 * Math.min(1, p * 6) * ampFactor;
+    const ph = -now * 0.006;
+    const maxIdx = Math.max(3, Math.min(RING_SAMPLES, Math.round(p * RING_SAMPLES)));
+    const pScale = (p * Math.PI * 2) / ringAngles[maxIdx];
+
+    let d = '';
+    let x = 100;
+    let y = 16;
+
+    for (let i = 0; i <= maxIdx; i++) {
+      const th = ringAngles[i] * pScale;
+      const r = R + amp * Math.sin(8 * th + ph);
+      x = 100 + r * ringCos[i];
+      y = 100 + r * ringSin[i];
+      d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+
+    if (d !== state.lastRingD) {
+      state.lastRingD = d;
+      core.setAttribute('d', d);
+      glow.setAttribute('d', d);
+    }
+
+    const sx = x.toFixed(1);
+    const sy = y.toFixed(1);
+    if (sx !== state.lastBeadX || sy !== state.lastBeadY) {
+      state.lastBeadX = sx;
+      state.lastBeadY = sy;
+      bead.setAttribute('cx', sx);
+      bead.setAttribute('cy', sy);
+      halo.setAttribute('cx', sx);
+      halo.setAttribute('cy', sy);
+    }
+
+    const op = ampFactor > 0.02 ? '1' : '0';
+    if (op !== state.lastBeadOp) {
+      state.lastBeadOp = op;
+      bead.setAttribute('opacity', op);
+      halo.setAttribute('opacity', op === '1' ? '0.8' : '0');
+    }
+  }
+
+  /*
+   * Referans 1000141658.jpg görselindeki 3B sıvı cam 'V' formunu oluşturur:
+   * - Kalın ve organik cam kollar (üst sol ve sağ kavisli geniş uçlar)
+   * - Ortada hafif asimetrik eyer/tepe kıvrımı ve derin gümüş-koyu kırılma
+   * - Altta akıcı ve kavisli bir alt birleşim noktası
+   */
+  function computeVPaths(wobble, phase, stretchX, stretchY) {
+    const cx = 60;
+    const cy = 58;
+    const w1 = Math.sin(phase * 3.8) * wobble;
+    const w2 = Math.cos(phase * 3.1 + 0.9) * wobble;
+    const w3 = Math.sin(phase * 4.5 + 1.8) * wobble;
+
+    function p(x, y, lw) {
+      return `${(cx + (x - cx) * stretchX + lw * 5.2).toFixed(1)} ${(cy + (y - cy) * stretchY + lw * 4.2).toFixed(1)}`;
+    }
+
+    function c(x1, y1, x2, y2, x, y, l1, l2, l3) {
+      return `C ${p(x1, y1, l1)}, ${p(x2, y2, l2)}, ${p(x, y, l3)}`;
+    }
+
+    const outer = [
+      `M ${p(20.5, 25.0, w1)}`,
+      c(14.0, 32.5, 22.5, 56.5, 47.5, 84.5, w1 * 0.9, w2, w3 * 0.8),
+      c(53.0, 90.8, 57.5, 95.5, 60.2, 96.0, w2 * 0.7, w3 * 0.6, w1 * 0.5),
+      c(63.4, 95.4, 69.8, 88.2, 79.8, 71.2, w3 * 0.7, w1, w2 * 0.9),
+      c(91.0, 52.0, 104.2, 32.0, 99.8, 24.0, w2, w3 * 0.9, w2 * 0.8),
+      c(96.5, 18.0, 83.2, 19.2, 77.2, 27.5, w3 * 0.5, w1 * 0.6, w2 * 0.5),
+      c(72.2, 35.0, 67.4, 44.5, 62.6, 46.8, w1 * 0.6, w2 * 0.7, w3 * 0.6),
+      c(56.6, 48.8, 51.6, 36.2, 45.2, 29.2, w2 * 0.6, w3 * 0.5, w1 * 0.5),
+      c(40.2, 21.6, 26.2, 19.2, 20.5, 25.0, w3 * 0.5, w1 * 0.5, w1) + ' Z'
+    ].join(' ');
+
+    const innerDepth = [
+      `M ${p(46.8, 31.2, w1 * 0.5)}`,
+      c(52.8, 38.8, 56.8, 50.2, 62.5, 49.4, w2 * 0.5, w3 * 0.6, w1 * 0.5),
+      c(68.4, 47.4, 73.0, 37.2, 77.2, 30.2, w3 * 0.5, w1 * 0.5, w2 * 0.5),
+      c(74.4, 42.8, 68.4, 55.0, 61.8, 55.6, w1 * 0.6, w2 * 0.6, w3 * 0.5),
+      c(55.2, 54.8, 50.6, 42.8, 46.0, 35.2, w2 * 0.5, w3 * 0.5, w1 * 0.5) + ' Z'
+    ].join(' ');
+
+    const leftBand = [
+      `M ${p(23.5, 30.0, w1 * 0.7)}`,
+      c(21.0, 44.5, 30.5, 66.0, 49.0, 86.2, w2 * 0.6, w3 * 0.7, w1 * 0.6),
+      c(54.2, 91.8, 58.0, 94.8, 60.0, 95.2, w3 * 0.5, w1 * 0.4, w2 * 0.4),
+      c(55.0, 87.2, 38.0, 62.5, 31.0, 36.5, w1 * 0.6, w2 * 0.7, w3 * 0.6) + ' Z'
+    ].join(' ');
+
+    const rightBand = [
+      `M ${p(96.5, 26.8, w2 * 0.6)}`,
+      c(96.0, 39.5, 86.5, 58.5, 74.5, 76.5, w3 * 0.5, w1 * 0.6, w2 * 0.5),
+      c(70.5, 82.5, 66.5, 87.5, 63.0, 91.5, w1 * 0.4, w2 * 0.4, w3 * 0.4),
+      c(74.5, 72.0, 86.5, 50.0, 91.5, 31.5, w2 * 0.5, w3 * 0.5, w1 * 0.5) + ' Z'
+    ].join(' ');
+
+    const topRim = [
+      `M ${p(22.0, 24.6, w1)}`,
+      c(27.5, 20.6, 39.5, 22.2, 45.0, 29.0, w1 * 0.5, w2 * 0.5, w1 * 0.5),
+      `M ${p(78.0, 27.0, w2 * 0.5)}`,
+      c(84.5, 20.2, 95.5, 19.2, 98.5, 24.2, w3 * 0.5, w2 * 0.5, w2 * 0.8)
+    ].join(' ');
+
+    const saddleRim = [
+      `M ${p(48.2, 33.2, w1 * 0.5)}`,
+      c(53.4, 40.2, 57.0, 49.4, 62.4, 48.0, w2 * 0.5, w3 * 0.5, w3 * 0.5)
+    ].join(' ');
+
+    return { outer, innerDepth, leftBand, rightBand, topRim, saddleRim, w1, w2 };
+  }
+
+  function applyVGeometry(geo, sheenX, sheenOp) {
+    const key = `${geo.outer}|${sheenX}|${sheenOp}`;
+    if (key === state.lastVKey) return;
+    state.lastVKey = key;
+
+    vBody.setAttribute('d', geo.outer);
+    vClipPath.setAttribute('d', geo.outer);
+    vCore.setAttribute('d', geo.innerDepth);
+    vLeftBand.setAttribute('d', geo.leftBand);
+    vRightBand.setAttribute('d', geo.rightBand);
+    vRim.setAttribute('d', geo.topRim);
+    vSubRim.setAttribute('d', geo.saddleRim);
+    vSpecL.setAttribute('cx', (29.5 + geo.w1 * 3.8).toFixed(1));
+    vSpecL.setAttribute('cy', (30.5 + geo.w2 * 3.2).toFixed(1));
+    vSpecR.setAttribute('cx', (92.5 + geo.w2 * 3.8).toFixed(1));
+    vSpecR.setAttribute('cy', (27.5 + geo.w1 * 3.2).toFixed(1));
+    vSheen.setAttribute('x', sheenX);
+    vSheen.setAttribute('opacity', sheenOp);
+  }
+
+  function setVStageTransform(transformStr, opacityStr) {
+    if (transformStr !== state.lastStageTransform) {
+      state.lastStageTransform = transformStr;
+      vStage.style.transform = transformStr;
+    }
+    if (opacityStr !== state.lastStageOpacity) {
+      state.lastStageOpacity = opacityStr;
+      vStage.style.opacity = opacityStr;
+    }
+  }
+
+  function resetVLogo() {
+    const clean = computeVPaths(0, 0, 1, 1);
+    state.lastVKey = '';
+    applyVGeometry(clean, '-85', '0');
+    setVStageTransform('translate3d(0, 0, 0) scale(0.68) rotate(0deg)', '0');
+  }
+
+  /*
+   * Tamamlanma sonrası koreografi:
+   * 1) Sıvı 'V' önce tik gibi sağa yatık onay açısına (+34deg) eğilip dalgalanır (0.00 - 0.36)
+   * 2) Oynakça zıplayıp kıvrılarak 3B hissi veren yatay/dikey eksen sıkışmasıyla döner (0.32 - 0.80)
+   * 3) Düzeltilip dik ve net normal 'V' logosuna (0deg, scale 1) oturur ve parıltı geçer (0.74 - 1.00)
+   */
+  function updateReveal(u, now) {
+    const opacity = Math.min(u / 0.14, 1).toFixed(2);
+
+    // 1. Aşama: tik gibi eğim (+34deg) -> 2. Aşama: oynak dönüş -> 3. Aşama: dik 'V' (0deg)
+    let rotDeg = 0;
+    let scaleX = 1;
+    let scaleY = 1;
+    let wobble = 0;
+
+    if (u < 0.34) {
+      const k = easeOutBack(u / 0.34);
+      rotDeg = 34 * k;
+      const bounce = Math.sin(u * Math.PI * 3) * 0.08;
+      scaleX = 0.72 + k * 0.34 + bounce;
+      scaleY = 0.72 + k * 0.32 - bounce * 0.7;
+      wobble = (1 - u * 1.2) * 1.15;
+    } else if (u < 0.78) {
+      const k = (u - 0.34) / 0.44;
+      const easedK = easeInOutCubic(k);
+      // 34 dereceden oynak bir salınımla 360 derecede dik 'V' konumuna döner
+      const spinSpan = 326 + Math.sin(k * Math.PI * 2) * 26;
+      rotDeg = 34 + easedK * spinSpan;
+      // 3B dönüş izlenimi veren yatay sıkışma/genişleme dalgası
+      const flipWave = Math.cos(k * Math.PI * 2.5);
+      scaleX = 1 + flipWave * 0.24 * (1 - k * 0.65);
+      scaleY = 1 - flipWave * 0.10 * (1 - k * 0.65);
+      wobble = Math.pow(1 - k, 1.35) * 1.25;
+    } else {
+      const k = (u - 0.78) / 0.22;
+      const settleBounce = Math.sin(k * Math.PI * 2.5) * Math.exp(-k * 4.5) * 0.07;
+      rotDeg = 360 + settleBounce * 45;
+      scaleX = 1 + settleBounce;
+      scaleY = 1 - settleBounce * 0.8;
+      wobble = Math.max(0, (1 - k) * 0.22);
+    }
+
+    const geo = computeVPaths(wobble, now * 0.011, scaleX, scaleY);
+
+    let sheenX = '-85';
+    let sheenOp = '0';
+    if (u >= 0.74) {
+      const s = (u - 0.74) / 0.26;
+      sheenX = (-85 + s * 250).toFixed(1);
+      sheenOp = (Math.sin(s * Math.PI) * 0.85).toFixed(2);
+    }
+
+    applyVGeometry(geo, sheenX, sheenOp);
+    setVStageTransform(
+      `translate3d(0, 0, 0) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)}) rotate(${rotDeg.toFixed(1)}deg)`,
+      opacity
+    );
+  }
+
+  function sparks(host, count, rad, cx, cy) {
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div');
+      d.className = 'sp';
+      const sz = 3 + Math.random() * 4;
+      d.style.cssText = `width:${sz}px;height:${sz}px;left:${cx}px;top:${cy}px;margin:${(-sz / 2).toFixed(1)}px;opacity:0`;
+      host.appendChild(d);
+
+      const a = (i / count) * Math.PI * 2 + Math.random() * 0.2;
+      const r = rad + Math.random() * 30;
+      const an = d.animate(
+        [
+          { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+          { transform: `translate3d(${(Math.cos(a) * r).toFixed(1)}px,${(Math.sin(a) * r).toFixed(1)}px,0) scale(0)`, opacity: 0 }
+        ],
+        { duration: 780 + Math.random() * 240, easing: 'cubic-bezier(.2,.7,.3,1)' }
+      );
+      an.onfinish = () => d.remove();
+    }
+  }
+
+  function celebrate() {
+    const w = document.createElement('div');
+    w.className = 'wave';
+    orb.appendChild(w);
+    const an = w.animate(
+      [
+        { transform: 'scale(1)', opacity: 0.8 },
+        { transform: 'scale(1.35)', opacity: 0 }
+      ],
+      { duration: 880, easing: 'ease-out' }
+    );
+    an.onfinish = () => w.remove();
+
+    const r = orb.getBoundingClientRect();
+    sparks(orb, 22, r.width * 0.62, r.width / 2, r.height / 2);
+
+    orb.animate(
+      [
+        { transform: 'scale(1)' },
+        { transform: 'scale(1.045)', offset: 0.4 },
+        { transform: 'scale(1)' }
+      ],
+      { duration: 480, easing: 'ease-out' }
+    );
+  }
+
+  function enterPhase(nextPhase, now) {
+    state.phase = nextPhase;
+    state.phaseStart = now;
+
+    if (nextPhase === 'connecting') {
+      state.phaseDuration = 600 / state.speedMult;
+      stEl.textContent = 'Bağlanıyor…';
+      telEl.textContent = '0,0 MB/s · Süre hesaplanıyor';
+    } else if (nextPhase === 'downloading') {
+      state.phaseDuration = 5400 / state.speedMult;
+      state.lastP = 0;
+      state.lastT = now;
+      stEl.textContent = 'İndiriliyor';
+    } else if (nextPhase === 'settling') {
+      state.phaseDuration = 460;
+    } else if (nextPhase === 'revealing') {
+      state.phaseDuration = 1750;
+      orb.classList.add('done');
+      stEl.textContent = 'Tamamlandı';
+      telEl.textContent = 'Hazır';
+      celebrate();
+    } else if (nextPhase === 'done') {
+      const clean = computeVPaths(0, 0, 1, 1);
+      state.lastVKey = '';
+      applyVGeometry(clean, '-85', '0');
+      setVStageTransform('translate3d(0, 0, 0) scale(1, 1) rotate(360deg)', '1');
+      state.reEnableAt = now + 220;
+    }
+  }
+
+  function startCycle() {
+    const now = performance.now();
+    orb.classList.remove('done');
+    reBtn.disabled = true;
+    state.lastP = 0;
+    state.lastT = now;
+    state.lastPct = -1;
+    state.lastMbText = '';
+    state.lastTelText = '';
+    state.lastRingD = '';
+    state.lastBeadOp = '';
+    state.reEnableAt = 0;
+
+    nEl.textContent = '0';
+    orb.setAttribute('aria-valuenow', '0');
+    mbEl.textContent = `0,0 / ${fmtTR(TOTAL_MB, 1)} MB`;
+    updateRing(0, now, 1);
+    resetVLogo();
+    enterPhase('connecting', now);
+  }
+
+  // Tek birleşik requestAnimationFrame döngüsü
+  function frameLoop(now) {
+    if (state.phase === 'connecting') {
+      if (now - state.phaseStart >= state.phaseDuration) {
+        enterPhase('downloading', now);
+      }
+    } else if (state.phase === 'downloading') {
+      const raw = Math.min((now - state.phaseStart) / state.phaseDuration, 1);
+      const p = easeInOutCubic(raw);
+
+      const dt = Math.max((now - state.lastT) / 1000, 0.008);
+      const dp = Math.max(0, p - state.lastP);
+      const speedMBps = (dp * TOTAL_MB) / dt;
+      state.lastP = p;
+      state.lastT = now;
+
+      updateRing(p, now, 1);
+
+      const pct = Math.round(p * 100);
+      if (pct !== state.lastPct) {
+        state.lastPct = pct;
+        nEl.textContent = String(pct);
+        orb.setAttribute('aria-valuenow', String(pct));
+      }
+
+      const mbText = `${fmtTR(p * TOTAL_MB, 1)} / ${fmtTR(TOTAL_MB, 1)} MB`;
+      if (mbText !== state.lastMbText) {
+        state.lastMbText = mbText;
+        mbEl.textContent = mbText;
+      }
+
+      const remSec = Math.max(0, Math.ceil(((1 - raw) * state.phaseDuration) / 1000));
+      const telText = `${fmtTR(speedMBps, 1)} MB/s · ${remSec > 0 ? `~${remSec} sn kaldı` : 'Tamamlanıyor'}`;
+      if (telText !== state.lastTelText) {
+        state.lastTelText = telText;
+        telEl.textContent = telText;
+      }
+
+      if (raw >= 1) {
+        enterPhase('settling', now);
+      }
+    } else if (state.phase === 'settling') {
+      const x = Math.min((now - state.phaseStart) / state.phaseDuration, 1);
+      const af = 1 - easeInOutCubic(x);
+      updateRing(1, now, af);
+
+      if (x >= 1) {
+        updateRing(1, now, 0);
+        enterPhase('revealing', now);
+      }
+    } else if (state.phase === 'revealing') {
+      const u = Math.min((now - state.phaseStart) / state.phaseDuration, 1);
+      updateReveal(u, now);
+      if (u >= 1) {
+        enterPhase('done', now);
+      }
+    } else if (state.phase === 'done') {
+      if (reBtn.disabled && state.reEnableAt > 0 && now >= state.reEnableAt) {
+        reBtn.disabled = false;
+      }
+    }
+
+    requestAnimationFrame(frameLoop);
+  }
+
+  // Tekrar oynat butonu
+  reBtn.addEventListener('click', (e) => {
+    if (reBtn.disabled) return;
+    const r = reBtn.getBoundingClientRect();
+    const cx = e.clientX ? e.clientX - r.left : r.width / 2;
+    const cy = e.clientY ? e.clientY - r.top : r.height / 2;
+
+    const rp = document.createElement('span');
+    rp.className = 'rpl';
+    rp.style.left = `${cx}px`;
+    rp.style.top = `${cy}px`;
+    reBtn.appendChild(rp);
+
+    const an = rp.animate(
+      [
+        { transform: 'scale(1)', opacity: 0.7 },
+        { transform: 'scale(22)', opacity: 0 }
+      ],
+      { duration: 620, easing: 'cubic-bezier(.2,.6,.3,1)' }
+    );
+    an.onfinish = () => rp.remove();
+
+    reBtn.animate(
+      [
+        { transform: 'scale(1)' },
+        { transform: 'scale(.92)', offset: 0.25 },
+        { transform: 'scale(1.05)', offset: 0.6 },
+        { transform: 'scale(1)' }
+      ],
+      { duration: 460, easing: 'ease-out' }
+    );
+
+    startCycle();
+  });
+
+  // Tema seçici (Saf Cam / Buz / Zümrüt)
+  themeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      themeBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const theme = btn.dataset.themeBtn;
+      if (theme === 'obsidian') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    });
+  });
+
+  // Hız anahtarı (1x / 2x)
+  speedBtn.addEventListener('click', () => {
+    state.speedMult = state.speedMult === 1 ? 2 : 1;
+    speedBtn.textContent = `${state.speedMult}× Hız`;
+    speedBtn.classList.toggle('active', state.speedMult === 2);
+    speedBtn.setAttribute('aria-pressed', String(state.speedMult === 2));
+  });
+
+  // İmleç eğimine göre 3B küre eğimi ve kayan cam parlama
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion) {
+    stage.addEventListener('pointermove', (e) => {
+      const r = orb.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width / 2)) / window.innerWidth;
+      const dy = (e.clientY - (r.top + r.height / 2)) / window.innerHeight;
+      orb.style.transform = `perspective(800px) rotateY(${(dx * 14).toFixed(2)}deg) rotateX(${(-dy * 14).toFixed(2)}deg)`;
+      orb.style.setProperty('--spec-x', `${(50 + dx * 60).toFixed(1)}%`);
+      orb.style.setProperty('--spec-y', `${(45 + dy * 60).toFixed(1)}%`);
+    });
+
+    stage.addEventListener('pointerleave', () => {
+      orb.style.transform = '';
+      orb.style.setProperty('--spec-x', '35%');
+      orb.style.setProperty('--spec-y', '24%');
+    });
+  }
+
+  startCycle();
+  requestAnimationFrame(frameLoop);
+})();
+</script>
+</body>
+</html>

@@ -169,6 +169,7 @@ extension_settings = extension_settings.replace(
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
 # Wire the shared VYRA glass master switch into General settings.
+settings = SETTINGS.read_text(encoding="utf-8")
 general_pref_anchor = '            SwitchPreference("morphe_native_snackbar", summary = true),'
 if settings.count(general_pref_anchor) != 1:
     fail("VYRA glass master preference anchor changed")

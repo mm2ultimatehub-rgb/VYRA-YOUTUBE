@@ -60,12 +60,12 @@ if splash.count(rive_dependency) != 1:
 splash = splash.replace(rive_dependency, "        startupAnimationResourcePatch", 1)
 rive_start = "        // The Rive styles are not available before 21.30:"
 rive_end = "        splashScreenStyleFingerprint.method.apply {"
-if splash.count(rive_start) != 1 or splash.count(rive_end) != 1:
-    fail("pinned Rive splash branch anchors changed")
+if splash.count(rive_start) != 1:
+    fail("pinned Rive splash start anchor changed")
 start_index = splash.index(rive_start)
-end_index = splash.index(rive_end, start_index)
+end_index = splash.find(rive_end, start_index)
 if end_index <= start_index:
-    fail("invalid Rive splash branch boundaries")
+    fail("pinned Rive splash end anchor changed")
 splash = splash[:start_index] + splash[end_index:]
 SPLASH_PATCH.write_text(splash, encoding="utf-8")
 

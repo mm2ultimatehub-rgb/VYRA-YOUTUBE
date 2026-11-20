@@ -69,7 +69,7 @@
 ## Implementation mapping and limits
 - The current pinned Morphe stack already provides the Glass capsule renderer, opacity, corner shape, size/width/spacing preview, navigation animation toggle, player icon styles, Shorts icon styles, feed-card layout, player overlay opacity, and theme color preferences.
 - Current VYRA overlay brands the settings entry as VYRA MOD and groups the existing General, Feed, Player, and Shorts settings under VYRA Appearance, VYRA Home & Feed, VYRA Player, and VYRA Shorts.
-- The VYRA source overlay now wires a master glass setting to the floating bottom navigation renderer, the top toolbar, the injected wide-search field, and native top/bottom player control views. The VYRA splash resource and settings entry are also wired.
+- The VYRA source overlay now wires a master glass setting to the floating bottom navigation renderer, the top toolbar, the injected wide-search field, native top/bottom player control views, and the Shorts lower action container. The VYRA splash resource and settings entry are also wired.
 - These new toolbar/player hooks are source-level changes pending a fresh Morphe bundle build and APK runtime verification. Do not describe them as tested on-device until the patched 21.30.216 APK has been installed and exercised.
 - Home feed cards, category chips, Shorts action rail, subscription filters, Library/Profile cards, and modal sheets still need their own verified component hooks. A full interface treatment must be implemented incrementally; do not claim those surfaces are glass-enabled yet.
 - Do not replace server-driven layouts blindly; preserve accessibility, native interactions, account flows, and playback behavior.

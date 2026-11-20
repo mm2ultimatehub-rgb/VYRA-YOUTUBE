@@ -6,6 +6,10 @@ on:
     types: [completed]
     branches: [main]
 
+concurrency:
+  group: publish-vyra-patch-source
+  cancel-in-progress: true
+
 permissions:
   actions: read
   contents: write
@@ -20,7 +24,22 @@ jobs:
         with:
           ref: main
 
+      - name: Skip stale build runs
+        id: current
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git fetch origin main
+          CURRENT_SHA="$(git rev-parse origin/main)"
+          if [ "$CURRENT_SHA" = "$SOURCE_SHA" ]; then
+            echo "is_current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_current=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping stale build $SOURCE_SHA; main is now $CURRENT_SHA"
+          fi
+
       - name: Download the bundle from the successful build
+        if: steps.current.outputs.is_current == 'true'
         uses: actions/download-artifact@v4
         with:
           name: vyra-youtube-patch-bundle
@@ -30,6 +49,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Version and verify the patch bundle
+        if: steps.current.outputs.is_current == 'true'
         id: bundle
         env:
           RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
@@ -71,6 +91,7 @@ jobs:
           ls -lh dist/*.mpp
 
       - name: Publish versioned GitHub release
+        if: steps.current.outputs.is_current == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.bundle.outputs.version }}
@@ -87,6 +108,7 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Update remote source metadata
+        if: steps.current.outputs.is_current == 'true'
         uses: actions/github-script@v7
         env:
           BUNDLE_VERSION: ${{ steps.bundle.outputs.version }}

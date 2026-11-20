@@ -65,7 +65,7 @@ ring = Image.new("RGBA", (380,380), (0,0,0,0))
 draw = ImageDraw.Draw(ring)
 draw.ellipse((4,4,376,376), outline=(220,225,235,35), width=2)
 for i in range(48):
-    angle = math.radians(250 + i*0.55)
+    angle = math.radians(250 + i*1.85)
     x, y = 190 + 186*math.cos(angle), 190 + 186*math.sin(angle)
     alpha = int(10 + 245*(i/48)**2)
     draw.ellipse((x-1.5,y-1.5,x+1.5,y+1.5), fill=(245,248,255,alpha))
@@ -168,6 +168,6 @@ serialized = json.dumps(composition, separators=(",",":"), ensure_ascii=False)
 validated = json.loads(serialized)
 assert len(validated["layers"]) == 6 and len(validated["assets"]) == 6
 assert all(a["p"].startswith("data:image/png;base64,") for a in validated["assets"])
-for filename in ("morphe_startup_animation.json", "morphe_startup_animation_play.json"):
-    (out_dir/filename).write_text(serialized, encoding="utf-8")
-print(f"Generated VYRA Lottie splash: {len(serialized):,} chars, 6 layers, 6 embedded images.")
+filename = "vyra_startup_animation.json"
+(out_dir/filename).write_text(serialized, encoding="utf-8")
+print(f"Generated {filename}: {len(serialized):,} chars, 6 layers, 6 embedded images, 8 seconds.")

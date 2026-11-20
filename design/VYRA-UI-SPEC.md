@@ -1,51 +1,52 @@
 # VYRA UI implementation specification
 
 ## Global visual language
-- Base: near-black / charcoal surfaces with subtle gradients, not purple or neon.
-- Material: restrained silver/chrome highlights, glass rims, translucent floating surfaces, soft shadows.
-- Typography: clean sans-serif; wide letter spacing for brand headings, compact readable metadata.
-- Cards: cinematic edge-to-edge thumbnails, rounded corners, thin low-contrast outlines.
+- Apply one restrained Liquid Glass system across the complete YouTube interface, not only the bottom navigation: top app bars, search, category chips, feed cards and metadata surfaces, menus and sheets, player controls, Shorts action rail, subscription filters, Library/Profile surfaces, and VYRA MOD settings.
+- Base: near-black / charcoal canvas with subtle gradients; keep large video/content areas visually clear rather than placing opaque glass panels over everything.
+- Material: translucent silver/chrome glass, subtle background blur when supported, thin reflective rims, soft shadows, and layered depth. Use stronger glass for floating controls and overlays; lighter glass for chips, cards, and inline controls.
+- Typography: clean sans-serif, wide letter spacing for brand headings, compact readable metadata, and strong contrast over moving video.
+- Cards: cinematic edge-to-edge thumbnails with rounded corners; apply glass to supporting controls and metadata surfaces without obscuring thumbnails.
 - Icons: consistent thin silver line icons; selected states use brighter silver fill/glow.
-- Motion: smooth and restrained; respect Android reduced-motion settings.
-- Preserve the stock YouTube experience when VYRA mode is disabled.
+- Motion: smooth and restrained (about 260 ms where appropriate); respect Android reduced-motion settings and avoid animating every element at once.
+- Accessibility: maintain readable contrast, touch targets, focus/selection states, and native YouTube accessibility semantics.
+- Preserve stock YouTube behavior and appearance when VYRA mode is disabled.
 
 ## Screen references
-
 ### Home
-- VYRA wordmark at the top left; cast, search, and profile actions at the top right.
-- Horizontal category chips: All, Music, Gaming, Live, Podcasts, Mixes.
-- Large cinematic video thumbnails with rounded corners, duration, title, channel avatar, views, and overflow menu.
-- Floating glass bottom capsule with Home, Shorts, central V action, Subscriptions, and Library.
+- VYRA wordmark at the top left; cast, search, and profile actions at the top right in a subtle glass action group.
+- Horizontal category chips use a light translucent glass treatment.
+- Large cinematic video thumbnails remain visible; use glass only for duration badges, overflow actions, and compact metadata where legible.
+- Floating glass bottom capsule with Home, Shorts, central V action, Subscriptions, and You.
 
 ### Player
-- Large cinematic player surface with subtle overlay controls.
-- Below: title, channel identity and subscribe action, compact action row, expandable description, and Up next list.
+- Large cinematic player remains unobstructed; transport controls and transient overlays use glass surfaces.
+- Below: title, channel identity and subscribe action, compact action row, expandable description, and Up next list with restrained glass controls/cards.
 - Keep all YouTube playback controls and behaviors intact: seek, pause, quality, captions, speed, cast, fullscreen, and rotation.
 
 ### Shorts
-- Full-screen vertical video with dark cinematic treatment.
-- Right-side action rail for like/dislike, comments, share, remix, and related actions.
-- Creator identity and subscribe action near the bottom; keep swipe navigation and playback behavior unchanged.
+- Full-screen vertical video remains the dominant surface.
+- Right-side action rail uses compact translucent glass buttons with strong contrast against video.
+- Creator identity and subscribe action near the bottom use a subtle glass panel; keep swipe navigation and playback behavior unchanged.
 
 ### Subscriptions
-- VYRA header with avatar/channel strip.
-- Filter chips such as All and Today, plus a newest-first sort control.
+- VYRA header with avatar/channel strip and light glass filter chips.
+- Newest-first sort control and overflow actions use glass.
 - Clean vertical list of cinematic video cards and creator metadata.
 
 ### Search
 - Wide translucent search field with microphone action.
-- Recent searches with clear/remove controls, suggested search chips, then results.
+- Recent searches with clear/remove controls and suggested search chips use light glass surfaces, then results.
 - Maintain native search submission, keyboard, voice search, and result navigation.
 
 ### Library
-- Two-column cards for Watch history, Playlists, Downloads, and Liked videos.
+- Two-column cards for Watch history, Playlists, Downloads, and Liked videos; use restrained glass framing without obscuring artwork.
 - Secondary rows for Your videos and Watch later.
 - Keep counts, offline status, and navigation behavior supplied by YouTube.
 
 ### Profile / You
 - VYRA cover banner with the glass V mark.
-- Account avatar, display name, handle, subscriber count, and Edit profile action.
-- Manage Google Account and Your channel actions, followed by History, Playlists, Downloads, Settings, and Help.
+- Account avatar, display name, handle, subscriber count, and Edit profile action remain clear and legible.
+- Manage Google Account and Your channel actions, followed by History, Playlists, Downloads, Settings, and Help; use consistent glass action surfaces.
 - Never alter account identity or Google account flows.
 
 ### VYRA MOD
@@ -58,31 +59,33 @@
 - Player appearance selector with preview.
 - Reset to VYRA defaults.
 
-## Approved prototype scope
-- From `Sıvı Cam Alt Menü.html`, use only the bottom navigation capsule: five native YouTube destinations (Home, Shorts, Create, Subscriptions, You), the central Create action, selected-tab movement, and the translucent glass surface. Do not port the sample Home/Shorts/Subscriptions page mockups or its theme-picker/demo controls.
-- The capsule should read as clear silver glass rather than a dark slab: low tint/opacity, visible but restrained rim highlight, rounded ends, and smooth selection motion. Preserve the upstream Glass renderer and real YouTube navigation actions.
-- Keep the original YouTube navigation when Glass is disabled. The Glass preference stays OFF by default; when enabled, VYRA defaults use a more transparent opacity (14/100), rounded ends, and navigation animations enabled.
-- From `yukleme-animasyonu.html`, use only the glass orb, circular progress ring, percentage, and completion/check animation as the visual for a future VYRA patch-download/update progress surface. Do not port its sample stage, replay demo, decorative theme, or fixed 5.4-second/48 MB simulated progress. Any shipped progress must be driven by actual byte/download progress.
-- The loading orb is not the YouTube launch splash. Keep startup branding separate; do not delay YouTube launch by running a fake download animation.
+## Approved visual direction
+- The Sıvı Cam Alt Menü.html reference establishes the material language: clear silver glass, low tint, visible but restrained rim highlight, rounded ends, layered translucency, and smooth selection motion.
+- Extend that same material language across the entire interface as described above. Do not copy the reference's demo page bodies, theme-picker/demo controls, or simulated interactions.
+- Use stronger blur/translucency for floating navigation, action groups, dialogs, and player/Shorts overlays; use lighter glass borders and surfaces for chips, cards, and inline controls.
+- Preserve native YouTube content hierarchy and real actions. Avoid a uniform opaque panel behind every section; the glass should create depth, not clutter.
+- When VYRA glass is disabled, restore the original YouTube appearance and navigation.
 
 ## Implementation mapping and limits
 - The current pinned Morphe stack already provides the Glass capsule renderer, opacity, corner shape, size/width/spacing preview, navigation animation toggle, player icon styles, Shorts icon styles, feed-card layout, player overlay opacity, and theme color preferences.
 - Current VYRA overlay brands the settings entry as VYRA MOD and groups the existing General, Feed, Player, and Shorts settings under VYRA Appearance, VYRA Home & Feed, VYRA Player, and VYRA Shorts.
-- The reference's exact custom animation speed/type, six-color accent palette, icon pack preview, and global Player appearance selector still require dedicated runtime settings and hooks; do not show these as implemented until their settings actually change the app.
-- A full screen redesign requires verified hooks for the relevant YouTube UI components. Avoid replacing server-driven layouts blindly; preserve accessibility and interaction semantics.
+- The current compiled patch bundle implements the glass bottom navigation and selected supported controls; it does NOT yet apply custom glass materials to every screen listed above.
+- A full interface treatment requires verified hooks for each relevant YouTube UI component and must be implemented incrementally. Do not claim a screen is glass-enabled until its runtime hook is wired and tested on the pinned YouTube build.
+- Do not replace server-driven layouts blindly; preserve accessibility, native interactions, account flows, and playback behavior.
+- The exact custom animation speed/type, six-color accent palette, icon pack preview, and global Player appearance selector still require dedicated runtime settings and hooks; do not show these as implemented until their settings actually change the app.
 - The 8-second splash concept is a visual reference only. Prefer Android's native startup surface and a short native-compatible transition rather than delaying app launch with a full-screen video.
 
 ## Asset references
-- `vyra_home.png`
-- `vyra_player.png`
-- `vyra_shorts.png`
-- `vyra_subscriptions.png`
-- `vyra_search.png`
-- `vyra_library.png`
-- `vyra_profile.png`
-- `vyra_mod_settings.png`
-- `vyra_liquid_glass_navigation.png`
-- `vyra-glass-monogram.png`
-- `vyra_splash_liquid.mp4`
+- vyra_home.png
+- vyra_player.png
+- vyra_shorts.png
+- vyra_subscriptions.png
+- vyra_search.png
+- vyra_library.png
+- vyra_profile.png
+- vyra_mod_settings.png
+- vyra_liquid_glass_navigation.png
+- vyra-glass-monogram.png
+- vyra_splash_liquid.mp4
 
 These references were supplied in the VYRA starter/mockup archives. Keep originals intact; use resized derivatives for Android resources and retain the source references for visual comparison.

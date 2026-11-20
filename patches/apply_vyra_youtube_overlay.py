@@ -643,10 +643,10 @@ def rebrand_string_values(path: Path) -> None:
         value = value.replace("Morphe", "VYRA")
         value = value.replace("morphe.software/translate", "github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE")
         return match.group(1) + value + match.group(3)
-    updated = re.sub(r'(<string\\b[^>]*>)(.*?)(</string>)', replace_value, content, flags=re.DOTALL)
+    updated = re.sub(r'(<string\b[^>]*>)(.*?)(</string>)', replace_value, content, flags=re.DOTALL)
     path.write_text(updated, encoding="utf-8")
     ET.parse(path)
-    if re.search(r'<string\\b[^>]*>[^<]*Morphe', updated):
+    if re.search(r'<string\b[^>]*>[^<]*Morphe', updated):
         fail(f"user-visible Morphe brand text remains in {path}")
 
 for resource in BRAND_STRING_FILES:
@@ -667,7 +667,7 @@ for key, value in (
     ("vyra_shorts_title", "VYRA Shorts"),
 ):
     if f'name="{key}"' not in tr_xml:
-        tr_xml = tr_xml.replace("</resources>", f'  <string name="{key}">{value}</string>\\n</resources>', 1)
+        tr_xml = tr_xml.replace("</resources>", f'  <string name="{key}">{value}</string>\n</resources>', 1)
 TR_YOUTUBE_STRINGS.write_text(tr_xml, encoding="utf-8")
 ET.parse(TR_YOUTUBE_STRINGS)
 

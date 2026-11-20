@@ -24,13 +24,14 @@ YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
+EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
 NAVIGATION_RESOURCES = ROOT / "patches/src/main/resources/navigationbar/drawable"
 
 def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -76,6 +77,18 @@ if not generator.is_file():
     fail(f"missing VYRA splash generator: {generator}")
 subprocess.run([sys.executable, str(generator), str(VYRA_LOGO), str(raw_resources)], check=True)
 
+# Ship the dedicated VYRA Lottie file without replacing Morphe's own resources.
+splash_resources = SPLASH_RESOURCES.read_text(encoding="utf-8")
+resource_anchor = '                "morphe_startup_animation_play.json"'
+if splash_resources.count(resource_anchor) != 1:
+    fail("startup animation resource list anchor changed")
+splash_resources = splash_resources.replace(
+    resource_anchor,
+    resource_anchor + ',\n                "vyra_startup_animation.json"',
+    1
+)
+SPLASH_RESOURCES.write_text(splash_resources, encoding="utf-8")
+
 NAVIGATION_RESOURCES.mkdir(parents=True, exist_ok=True)
 for filename, content in (
     ("vyra_navigation_home.xml", "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\" android:width=\"24dp\" android:height=\"24dp\" android:viewportWidth=\"24\" android:viewportHeight=\"24\"><path android:fillColor=\"#00000000\" android:strokeColor=\"#E5E7EB\" android:strokeWidth=\"1.75\" android:strokeLineCap=\"round\" android:strokeLineJoin=\"round\" android:pathData=\"M4.5,11.2 L12,4.8 L19.5,11.2 V18.5 A1.5,1.5 0,0 1,18,20 H14.5 V14.8 A2.5,2.5 0,0 0,9.5,14.8 V20 H6 A1.5,1.5 0,0 1,4.5,18.5 Z\"/></vector>"),
@@ -104,10 +117,26 @@ if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", F
     fail("VYRA must preserve Glass OFF as the default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
+splash_setting_anchor = '    public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
+if extension_settings.count(splash_setting_anchor) != 1:
+    fail("VYRA splash setting insertion anchor changed")
+extension_settings = extension_settings.replace(
+    splash_setting_anchor,
+    splash_setting_anchor + '\n    public static final BooleanSetting VYRA_SPLASH_SCREEN = new BooleanSetting("vyra_splash_screen", TRUE, true);',
+    1
+)
 
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
 
 source = NAV.read_text(encoding="utf-8")
+splash_import = "import app.morphe.patches.youtube.misc.settings.settingsPatch" + chr(10)
+if source.count(splash_import) != 1:
+    fail("navigation patch splash dependency import anchor changed")
+source = source.replace(splash_import, splash_import + "import app.morphe.patches.youtube.layout.theme.splashAnimationPatch" + chr(10), 1)
+resource_patch_anchor = "private val navigationBarResourcePatch = patch {" + chr(10) + "    execute {"
+if source.count(resource_patch_anchor) != 1:
+    fail("navigation resource patch dependency anchor changed")
+source = source.replace(resource_patch_anchor, resource_patch_anchor.replace("    execute {", "    dependsOn(splashAnimationPatch)" + chr(10) + "    execute {"), 1)
 # Inject the VYRA Home, Shorts and Subscriptions glyphs into real YouTube navigation views.
 java_source = EXTENSION_NAVIGATION.read_text(encoding="utf-8")
 drawable_import = "import android.graphics.drawable.ColorDrawable;" + chr(10)
@@ -212,6 +241,7 @@ addition = '''        )
         // upstream Glass navigation renderer reads these exact values.
         PreferenceScreen.GENERAL.addPreferences(
             SwitchPreference("morphe_navigation_bar_animations", summary = true),
+            SwitchPreference("vyra_splash_screen", summary = true),
             ListPreference("morphe_navigation_bar_style"),
             SwitchPreference("morphe_navigation_bar_glass", summary = true),
             NonInteractivePreference(
@@ -295,6 +325,8 @@ SETTINGS.write_text(settings, encoding="utf-8")
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")
 for key, value in (
     ("vyra_appearance_title", "VYRA Appearance"),
+    ("vyra_splash_screen_title", "VYRA splash screen"),
+    ("vyra_splash_screen_summary", "Play the VYRA liquid-glass animation when YouTube starts"),
     ("vyra_feed_title", "VYRA Home &amp; Feed"),
     ("vyra_player_title", "VYRA Player"),
     ("vyra_shorts_title", "VYRA Shorts"),
@@ -316,4 +348,4 @@ for old, new in metadata_replacements.items():
         fail(f"expected exactly one patch bundle metadata anchor: {old}")
     build_script = build_script.replace(old, new, 1)
 PATCH_BUILD.write_text(build_script, encoding="utf-8")
-print("VYRA overlay applied: YouTube settings title, Appearance screen and bundle identity are wired.")
+print("VYRA overlay applied: settings, Glass navigation, native splash hook and dedicated VYRA Lottie resource are wired.")

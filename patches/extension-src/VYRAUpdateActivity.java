@@ -32,10 +32,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class VYRAUpdateActivity extends Activity {
-    private static final String STATUS_URL =
-            "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/vyra-apk-final-build/updater/update-status.json";
     private static final String MANIFEST_URL =
-            "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/vyra-apk-final-build/updater/update-manifest.json";
+            "https://github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/releases/latest/download/update-manifest.json";
     private static final long MAX_APK_BYTES = 300L * 1024L * 1024L;
 
     private WebView web;
@@ -104,13 +102,6 @@ public final class VYRAUpdateActivity extends Activity {
         status("Güncelleme kontrol ediliyor", "VYRA sürüm bilgisi güvenli bağlantıdan alınıyor…");
         executor.execute(() -> {
             try {
-                JSONObject release = new JSONObject(readHttps(STATUS_URL));
-                if (!"published".equals(release.optString("status"))) {
-                    status("VYRA güncel", release.optString("message",
-                            "Şu anda yayınlanmış yeni bir sürüm bulunmuyor."));
-                    return;
-                }
-
                 JSONObject manifest = new JSONObject(readHttps(MANIFEST_URL));
                 String packageName = manifest.getString("package_name");
                 if (!getPackageName().equals(packageName)) {

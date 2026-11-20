@@ -147,12 +147,34 @@ jobs:
         with:
           name: vyra-youtube-patch-bundle
           path: dist/patches
-      - name: Download and verify stock YouTube 21.30.216
+      - uses: actions/checkout@v4
+        with:
+          path: vyra-source
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install VYRA icon conversion dependency
+        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Download and verify stock YouTube 21.30.216 arm64
         run: |
-          curl -fL --retry 3 --retry-delay 2 \
-            "https://archive.org/download/jhc-apks/apks/com.google.android.youtube/com.google.android.youtube-21.30.216-all.apk" \
+          curl -fL --connect-timeout 20 --max-time 300 --retry 3 --retry-delay 2 \
+            "https://archive.org/download/jhc-apks/apks/com.google.android.youtube/com.google.android.youtube-21.30.216-arm64-v8a.apk" \
             -o stock-youtube.apk
-          echo "3775a15129dcc4e5b80fc17b7e0841b7fdd1ca89a6e72baa798806f666c74d02  stock-youtube.apk" | sha256sum -c -
+          sha256sum stock-youtube.apk | tee stock-youtube.sha256
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          "$APKSIGNER" verify --verbose --print-certs stock-youtube.apk | tee stock-signature.txt
+          grep -qi '3d7a1223019aa39d9ea0e3436ab7c0896bfb4fb679f4de5fe7c23f326c8f994a' stock-signature.txt
+          "$AAPT" dump badging stock-youtube.apk | head -1 | tee stock-package-info.txt
+          grep -q "com.google.android.youtube" stock-package-info.txt
+          grep -q "21.30.216" stock-package-info.txt
+      - name: Prepare VYRA launcher icon
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          image = Image.open("vyra-source/branding/assets/vyra-glass-monogram-256.webp").convert("RGBA")
+          image.resize((512, 512), Image.Resampling.LANCZOS).save("vyra-icon.png")
+          PY
       - name: Download Morphe Desktop CLI
         run: |
           curl -fL --retry 3 --retry-delay 2 \
@@ -169,6 +191,14 @@ jobs:
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           java -jar morphe-desktop.jar patch \
             --patches "$PATCHES" \
+            --enable "Change package name" \
+            --options "packageName=app.vyra.youtube" \
+            --options "updatePermissions=true" \
+            --options "updateProviders=true" \
+            --enable "Custom branding" \
+            --options "customName=VYRA YouTube" \
+            --options "customIcon=$GITHUB_WORKSPACE/vyra-icon.png" \
+            --signer "VYRA Project" \
             --out "VYRA-YouTube-21.30.216.apk" \
             --striplibs arm64-v8a \
             --result-file "patch-result.json" \

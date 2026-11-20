@@ -684,4 +684,9 @@ for old, new in metadata_replacements.items():
         fail(f"expected exactly one patch bundle metadata anchor: {old}")
     build_script = build_script.replace(old, new, 1)
 PATCH_BUILD.write_text(build_script, encoding="utf-8")
-print("VYRA overlay applied: settings, Glass navigation, native splash hook and dedicated VYRA Lottie resource are wired.")
+updater_integrator = ROOT.parent / "vyra-youtube/patches/integrate_vyra_updater.py"
+if not updater_integrator.is_file():
+    fail(f"missing VYRA updater integration script: {updater_integrator}")
+subprocess.run([sys.executable, str(updater_integrator), str(ROOT), str(ROOT.parent / "vyra-youtube")], check=True)
+
+print("VYRA overlay applied: settings, Glass navigation, native splash, VYRA branding and in-app updater are wired.")

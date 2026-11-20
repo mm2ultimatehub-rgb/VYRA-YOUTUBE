@@ -33,6 +33,8 @@ jobs:
           path: vyra-youtube
       - name: Apply and validate VYRA overlay
         working-directory: morphe-patches
+        env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
         run: |
           python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py ../vyra-youtube/patches/generate_vyra_splash.py
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
@@ -114,6 +116,8 @@ jobs:
           PY
       - name: Apply VYRA overlay
         working-directory: morphe-patches
+        env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
         run: python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
       - name: Build Android patch bundle
         working-directory: morphe-patches

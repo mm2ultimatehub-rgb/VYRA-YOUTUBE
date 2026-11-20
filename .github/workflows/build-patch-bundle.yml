@@ -168,21 +168,13 @@ jobs:
           "$AAPT" dump badging stock-youtube.apk | head -1 | tee stock-package-info.txt
           grep -q "com.google.android.youtube" stock-package-info.txt
           grep -q "21.30.216" stock-package-info.txt
-      - name: Check out current Morphe Desktop source
-        uses: actions/checkout@v4
-        with:
-          repository: MorpheApp/morphe-desktop
-          ref: main
-          path: morphe-desktop-source
-      - name: Build compatible Morphe CLI from source
-        working-directory: morphe-desktop-source
+      - name: Download released Morphe CLI
         run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon shadowJar
-          MORPHE_JAR="$(find build/libs -maxdepth 1 -type f -name '*all.jar' -print -quit)"
-          test -n "$MORPHE_JAR"
-          java -jar "$MORPHE_JAR" --help
-          cp "$MORPHE_JAR" ../morphe-desktop.jar
+          curl -fL --retry 3 --connect-timeout 20 --max-time 240 \
+            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.2.0/morphe-desktop-2.2.0-all.jar" \
+            -o morphe-desktop.jar
+          echo "5ca0320ee05481df1ae3afd2f003bba3ff994d11d1f66ae48811ced71355e4fe  morphe-desktop.jar" | sha256sum -c -
+          java -jar morphe-desktop.jar --help >/dev/null
       - name: Prepare adaptive VYRA launcher icon
         run: |
           python - <<'PY'

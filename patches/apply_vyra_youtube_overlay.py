@@ -26,13 +26,14 @@ PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
 EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
+EXTENSION_GLASS_NAV = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java"
 NAVIGATION_RESOURCES = ROOT / "patches/src/main/resources/navigationbar/drawable"
 
 def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_GLASS_NAV):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -139,9 +140,24 @@ for old, new in setting_defaults.items():
     if extension_settings.count(old) != 1:
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
-# The stock YouTube navigation must remain the default until the user opts in.
-if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
-    fail("VYRA must preserve Glass OFF as the default")
+# VYRA's master switch is OFF by default. When enabled, the existing upstream
+# navigation Glass preference defaults ON and remains user-controllable.
+nav_glass_default = 'new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()))'
+if extension_settings.count(nav_glass_default) != 1:
+    fail("expected exactly one pinned navigation Glass setting")
+extension_settings = extension_settings.replace(
+    nav_glass_default,
+    'new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability(), parent(VYRA_LIQUID_GLASS)))',
+    1
+)
+master_setting_anchor = '    public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability(), parent(VYRA_LIQUID_GLASS)));'
+if extension_settings.count(master_setting_anchor) != 1:
+    fail("VYRA master setting insertion anchor changed")
+extension_settings = extension_settings.replace(
+    master_setting_anchor,
+    '    public static final BooleanSetting VYRA_LIQUID_GLASS = new BooleanSetting("vyra_liquid_glass", FALSE, true);\n' + master_setting_anchor,
+    1
+)
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
 splash_setting_anchor = '    public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
@@ -154,6 +170,19 @@ extension_settings = extension_settings.replace(
 )
 
 EXTENSION_SETTINGS.write_text(extension_settings, encoding="utf-8")
+
+# Gate the pinned upstream Glass renderer with the VYRA master switch. The same
+# isEnabled() gate is already consumed by the upstream glass miniplayer.
+glass_navigation = EXTENSION_GLASS_NAV.read_text(encoding="utf-8")
+glass_enabled_anchor = "private static final boolean ENABLED = Settings.NAVIGATION_BAR_GLASS.get()"
+if glass_navigation.count(glass_enabled_anchor) != 1:
+    fail("pinned Glass navigation enablement anchor changed")
+glass_navigation = glass_navigation.replace(
+    glass_enabled_anchor,
+    "private static final boolean ENABLED = Settings.VYRA_LIQUID_GLASS.get() && Settings.NAVIGATION_BAR_GLASS.get()",
+    1
+)
+EXTENSION_GLASS_NAV.write_text(glass_navigation, encoding="utf-8")
 
 # Route the native YouTube Lottie splash hook to the VYRA resource when enabled.
 theme_source = EXTENSION_THEME.read_text(encoding="utf-8")
@@ -325,6 +354,7 @@ addition = '''        )
         // VYRA-owned appearance screen. Keep original preference keys because the
         // upstream Glass navigation renderer reads these exact values.
         PreferenceScreen.GENERAL.addPreferences(
+            SwitchPreference("vyra_liquid_glass", summary = true),
             SwitchPreference("morphe_navigation_bar_animations", summary = true),
             SwitchPreference("vyra_splash_screen", summary = true),
             ListPreference("morphe_navigation_bar_style"),
@@ -410,6 +440,8 @@ SETTINGS.write_text(settings, encoding="utf-8")
 xml = YOUTUBE_STRINGS.read_text(encoding="utf-8")
 for key, value in (
     ("vyra_appearance_title", "VYRA Appearance"),
+    ("vyra_liquid_glass_title", "VYRA Liquid Glass"),
+    ("vyra_liquid_glass_summary", "Enable VYRA glass on supported YouTube surfaces"),
     ("vyra_splash_screen_title", "VYRA splash screen"),
     ("vyra_splash_screen_summary", "Play the VYRA liquid-glass animation when YouTube starts"),
     ("vyra_feed_title", "VYRA Home &amp; Feed"),

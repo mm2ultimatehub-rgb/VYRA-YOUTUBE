@@ -24,6 +24,12 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - `yukleme-animasyonu.html` is a reference only for a future update/download progress indicator (glass orb, ring, percentage, completion state). Its timed demo progress is not used; real progress must come from the actual download operation.
 - The stock YouTube navigation remains the default. When the user enables Glass, VYRA defaults are a clearer capsule (opacity 14/100), rounded ends, and navigation animations enabled.
 
+## Automatic patch-source updates
+- Add this repository to Morphe Manager as a **Remote** source: `mm2ultimatehub-rgb/VYRA-YOUTUBE`.
+- A successful patch-bundle build is published as a versioned GitHub Release, then `patches-bundle.json` is refreshed to point at that release asset.
+- Morphe Manager can refresh remote sources in the background using its Updates schedule. The source card's Update action forces an immediate check.
+- The glass-orb loader prototype is reserved for a future real download-progress surface; it is not a fake progress screen and does not replace Morphe Manager's own update UI.
+
 ## Target baseline
 - Android package: `com.google.android.youtube`
 - Target version: `21.30.216`

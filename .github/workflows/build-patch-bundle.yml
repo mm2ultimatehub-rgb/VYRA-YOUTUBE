@@ -294,7 +294,7 @@ jobs:
 
   publish-release:
     needs: [validate-overlay, build-mpp, build-apk]
-    if: github.event_name == 'push' && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
+    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -303,12 +303,13 @@ jobs:
           path: dist
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ github.token }}
       - name: Publish signed APK release
         env:
           GH_TOKEN: ${{ github.token }}
           BUILD_NUMBER: ${{ github.run_number }}
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           APK="dist/VYRA-YouTube-21.30.216.apk"
           test -s "$APK"
@@ -340,19 +341,19 @@ jobs:
           python3 -m json.tool updater/update-manifest.json >/dev/null
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin "$GITHUB_REF_NAME"
+          git pull --rebase origin "$TARGET_BRANCH"
           git add updater/update-manifest.json updater/update-status.json
           git commit -m "Publish VYRA YouTube update manifest [skip ci]"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin "HEAD:$TARGET_BRANCH"
 
   publish-status:
     needs: [validate-overlay, build-mpp, build-apk, publish-release]
-    if: always() && github.event_name == 'push'
+    if: always() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ github.token }}
       - name: Publish final build status
         env:
@@ -362,6 +363,7 @@ jobs:
           RELEASE_RESULT: ${{ needs.publish-release.result }}
           BUILD_RUN_ID: ${{ github.run_id }}
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           if [ "$VALIDATION_RESULT" = "success" ] && [ "$BUILD_RESULT" = "success" ]; then RESULT=success; else RESULT=failure; fi
           if [ "$RESULT" = "success" ] && [ "$APK_RESULT" != "success" ]; then RESULT=failure; fi
@@ -369,7 +371,7 @@ jobs:
           printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin "$GITHUB_REF_NAME"
+          git pull --rebase origin "$TARGET_BRANCH"
           git add build-status.json
           git commit -m "Record VYRA patch build status [skip ci]" || exit 0
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin "HEAD:$TARGET_BRANCH"

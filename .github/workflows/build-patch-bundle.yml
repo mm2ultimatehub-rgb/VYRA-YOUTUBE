@@ -33,6 +33,9 @@ jobs:
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
+          grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_glass_opacity", 14' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'titleKey = "vyra_appearance_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'titleKey = "vyra_player_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'titleKey = "vyra_feed_title"' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt

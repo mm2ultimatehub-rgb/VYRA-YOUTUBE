@@ -1179,49 +1179,15 @@
     requestAnimationFrame(frameLoop);
   }
 
-  // Native kurulum köprüsü; demo tekrar oynatma davranışı bu ekranda kapalıdır.
-  reBtn.addEventListener('click', (e) => {
-    if (state.externalMode) {
-      if (!state.downloadReady || reBtn.disabled) return;
-      const installer = window.VYRAInstaller;
-      if (installer && typeof installer.installUpdate === 'function') {
-        installer.installUpdate();
-      } else {
-        setStatus('Kurulum bağlantısı bulunamadı', 'Android kurulum köprüsü hazır değil.');
-      }
-      return;
+  // Install is enabled only after native verification calls setReady().
+  reBtn.addEventListener('click', () => {
+    if (!state.downloadReady || reBtn.disabled) return;
+    const installer = window.VYRAInstaller;
+    if (installer && typeof installer.installUpdate === 'function') {
+      installer.installUpdate();
+    } else {
+      setStatus('Kurulum bağlantısı bulunamadı', 'Android kurulum köprüsü hazır değil.');
     }
-    if (reBtn.disabled) return;
-    const r = reBtn.getBoundingClientRect();
-    const cx = e.clientX ? e.clientX - r.left : r.width / 2;
-    const cy = e.clientY ? e.clientY - r.top : r.height / 2;
-
-    const rp = document.createElement('span');
-    rp.className = 'rpl';
-    rp.style.left = `${cx}px`;
-    rp.style.top = `${cy}px`;
-    reBtn.appendChild(rp);
-
-    const an = rp.animate(
-      [
-        { transform: 'scale(1)', opacity: 0.7 },
-        { transform: 'scale(22)', opacity: 0 }
-      ],
-      { duration: 620, easing: 'cubic-bezier(.2,.6,.3,1)' }
-    );
-    an.onfinish = () => rp.remove();
-
-    reBtn.animate(
-      [
-        { transform: 'scale(1)' },
-        { transform: 'scale(.92)', offset: 0.25 },
-        { transform: 'scale(1.05)', offset: 0.6 },
-        { transform: 'scale(1)' }
-      ],
-      { duration: 460, easing: 'ease-out' }
-    );
-
-    startCycle();
   });
 
   // Tema seçici (Saf Cam / Buz / Zümrüt)

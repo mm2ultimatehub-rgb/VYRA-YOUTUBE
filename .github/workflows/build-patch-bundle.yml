@@ -168,17 +168,39 @@ jobs:
           "$AAPT" dump badging stock-youtube.apk | head -1 | tee stock-package-info.txt
           grep -q "com.google.android.youtube" stock-package-info.txt
           grep -q "21.30.216" stock-package-info.txt
-      - name: Prepare VYRA launcher icon
+      - name: Prepare adaptive VYRA launcher icon
         run: |
           python - <<'PY'
-          from PIL import Image
-          image = Image.open("vyra-source/branding/assets/vyra-glass-monogram-256.webp").convert("RGBA")
-          image.resize((512, 512), Image.Resampling.LANCZOS).save("vyra-icon.png")
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          source = Image.open("vyra-source/branding/assets/vyra-glass-monogram-256.webp").convert("RGB")
+          logo = Image.new("RGBA", source.size)
+          logo.putdata([(230, 234, 242, max(r, g, b)) for r, g, b in source.getdata()])
+          densities = {
+              "mipmap-mdpi": 108,
+              "mipmap-hdpi": 162,
+              "mipmap-xhdpi": 216,
+              "mipmap-xxhdpi": 324,
+              "mipmap-xxxhdpi": 432,
+          }
+          for folder, size in densities.items():
+              target = Path("vyra-icon") / folder
+              target.mkdir(parents=True, exist_ok=True)
+              background = Image.new("RGBA", (size, size), (5, 5, 6, 255))
+              draw = ImageDraw.Draw(background)
+              inset = round(size * 0.09)
+              draw.ellipse((inset, inset, size-inset, size-inset),
+                           outline=(115, 122, 136, 135), width=max(1, size // 90))
+              background.save(target / "morphe_adaptive_background_custom.png")
+              foreground = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+              mark = logo.resize((round(size * 0.72), round(size * 0.72)), Image.Resampling.LANCZOS)
+              foreground.alpha_composite(mark, ((size-mark.width)//2, (size-mark.height)//2))
+              foreground.save(target / "morphe_adaptive_foreground_custom.png")
           PY
       - name: Download Morphe Desktop CLI
         run: |
           curl -fL --retry 3 --retry-delay 2 \
-            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.2.0-dev.12/morphe-desktop-2.2.0-dev.12-all.jar" \
+            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.3.0-dev.3/morphe-desktop-2.3.0-dev.3-all.jar" \
             -o morphe-desktop.jar
           test -s morphe-desktop.jar
       - name: Inspect compatible patch options
@@ -191,13 +213,12 @@ jobs:
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           java -jar morphe-desktop.jar patch \
             --patches "$PATCHES" \
-            --enable "Change package name" \
+            --enable "Clone app" \
             --options "packageName=app.vyra.youtube" \
             --options "updatePermissions=true" \
             --options "updateProviders=true" \
-            --enable "Custom branding" \
             --options "customName=VYRA YouTube" \
-            --options "customIcon=$GITHUB_WORKSPACE/vyra-icon.png" \
+            --options "customIcon=$GITHUB_WORKSPACE/vyra-icon" \
             --signer "VYRA Project" \
             --out "VYRA-YouTube-21.30.216.apk" \
             --striplibs arm64-v8a \

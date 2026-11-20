@@ -21,6 +21,7 @@ GLOW_RESOURCES = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layo
 VYRA_LOGO = ROOT.parent / "vyra-youtube/branding/assets/vyra-glass-monogram-256.webp"
 SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_monogram.webp"
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
+SPLASH_STRINGS = ROOT / "patches/src/main/resources/addresources/values/shared-youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
@@ -31,7 +32,7 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
 
@@ -69,6 +70,31 @@ if end_index <= start_index:
     fail("pinned Rive splash end anchor changed")
 splash = splash[:start_index] + "\n        splashScreenStyleFingerprint.method.apply {" + splash[end_index + len(rive_end):]
 SPLASH_PATCH.write_text(splash, encoding="utf-8")
+
+# Offer only the two supported VYRA splash choices; Rive styles are deliberately disabled.
+style_suffix = """val arrayKeySuffix = when {
+            is_21_39_or_greater -> "_21_39"
+            is_21_30_or_greater -> "_21_30"
+            else -> ""
+        }"""
+if splash.count(style_suffix) != 1:
+    fail("splash style-version selector anchor changed")
+splash = splash.replace(style_suffix, 'val arrayKeySuffix = ""', 1)
+SPLASH_PATCH.write_text(splash, encoding="utf-8")
+
+splash_strings = SPLASH_STRINGS.read_text(encoding="utf-8")
+for old, new in (
+    ('<string name="morphe_splash_screen_style_title">Startup animation</string>',
+     '<string name="morphe_splash_screen_style_title">VYRA splash screen</string>'),
+    ('<string name="morphe_splash_screen_style_entry_3">Morphe Color</string>',
+     '<string name="morphe_splash_screen_style_entry_3">VYRA</string>'),
+    ('<string name="morphe_splash_screen_style_entry_5">Morphe Monochrome</string>',
+     '<string name="morphe_splash_screen_style_entry_5">VYRA Monochrome</string>'),
+):
+    if splash_strings.count(old) != 1:
+        fail(f"expected one VYRA splash label anchor: {old}")
+    splash_strings = splash_strings.replace(old, new, 1)
+SPLASH_STRINGS.write_text(splash_strings, encoding="utf-8")
 
 # Generate the approved VYRA liquid-glass Lottie animation into upstream raw resources.
 generator = ROOT.parent / "vyra-youtube/patches/generate_vyra_splash.py"

@@ -19,6 +19,15 @@ jobs:
       - name: Validate repository structure
         run: |
           python -m json.tool design/tokens.json > /dev/null
+          python -m json.tool updater/update-manifest.schema.json > /dev/null
+          python -m json.tool updater/update-status.json > /dev/null
+          test -s updater/update-progress.html
+          test -s updater/bridge-contract.md
+          grep -q 'window.VYRAUpdater' updater/update-progress.html
+          grep -q 'setReady' updater/update-progress.html
+          grep -q 'window.VYRAInstaller' updater/update-progress.html
+          grep -q 'setReady()' updater/bridge-contract.md
+          ! grep -q 'startCycle();' updater/update-progress.html
           test -s README.md
           test -s docs/ARCHITECTURE.md
           test -s docs/ROADMAP.md

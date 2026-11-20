@@ -69,6 +69,21 @@ splash_resources.write_text(source, encoding="utf-8")
 settings_path = UPSTREAM / "patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt"
 settings = settings_path.read_text(encoding="utf-8")
 
+# Remove the upstream About screen, which exposes Morphe-specific branding and links.
+about_block = """        // Add an "About" preference to the top.
+        preferences += NonInteractivePreference(
+            key = "morphe_settings_screen_00_about",
+            icon = "@drawable/morphe_settings_screen_00_about",
+            iconBold = "@drawable/morphe_settings_screen_00_about_bold",
+            layout = "@layout/preference_with_icon",
+            summaryKey = null,
+            tag = "app.morphe.extension.shared.settings.preference.about.MorpheAboutPreference",
+            selectable = true
+        )
+
+"""
+settings = replace_once(settings, about_block, "", "Morphe About preference removal")
+
 # Add a VYRA Updates row to the existing VYRA MOD settings screen.
 preference_anchor = '            SwitchPreference("vyra_glass_mode", summary = true),'
 settings = replace_once(

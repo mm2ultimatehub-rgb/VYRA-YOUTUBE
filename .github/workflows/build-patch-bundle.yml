@@ -253,11 +253,11 @@ jobs:
             --keystore-entry-alias "$VYRA_KEY_ALIAS" \
             --keystore-entry-password "$VYRA_KEY_PASSWORD" \
             --signer "VYRA Project" \
-            --out "VYRA-YouTube-21.30.217.apk" \
+            --out "VYRA-YouTube-21.30.218.apk" \
             --result-file "patch-result.json" \
             "stock-youtube.apk"
           jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null
-          test -s "VYRA-YouTube-21.30.217.apk"
+          test -s "VYRA-YouTube-21.30.218.apk"
       - name: Verify APK signature and package
         env:
           BUILD_NUMBER: ${{ github.run_number }}
@@ -265,7 +265,7 @@ jobs:
           set -euo pipefail
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
-          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.217.apk" | tee output-signature.txt
+          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.218.apk" | tee output-signature.txt
           EXPECTED_CERT_SHA256="$(cat expected-cert-sha256.txt)"
           grep -qi "$EXPECTED_CERT_SHA256" output-signature.txt
           if [ "$EXPECTED_CERT_SHA256" = "7cdb3134b740c64fd37628a8b9f8fbf5aef6e65267719098741a5ff858c94d92" ]; then
@@ -274,22 +274,22 @@ jobs:
             echo "Signing key changed from the previously delivered APK. Uninstall the old VYRA YouTube once, install this APK, then future in-app updates will work." > signing-migration.txt
           fi
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
-          "$AAPT" dump badging "VYRA-YouTube-21.30.217.apk" | tee package-info.txt
+          "$AAPT" dump badging "VYRA-YouTube-21.30.218.apk" | tee package-info.txt
           grep -q "name='app.vyra.youtube'" package-info.txt
-          grep -q "versionName='21.30.217'" package-info.txt
+          grep -q "versionName='21.30.218'" package-info.txt
           EXPECTED_VERSION_CODE=$((1561187872 + BUILD_NUMBER - 203))
           grep -q "versionCode='$EXPECTED_VERSION_CODE'" package-info.txt
           grep -q "application-label:'VYRA YouTube'" package-info.txt
       - name: Prepare signed VYRA delivery
         run: |
           zip -j vyra-youtube-signed-delivery.zip \
-            "VYRA-YouTube-21.30.217.apk" \
+            "VYRA-YouTube-21.30.218.apk" \
             patch-result.json package-info.txt patch-list.txt output-signature.txt signing-migration.txt
       - uses: actions/upload-artifact@v4
         with:
           name: vyra-youtube-signed-apk
           path: |
-            VYRA-YouTube-21.30.217.apk
+            VYRA-YouTube-21.30.218.apk
             vyra-youtube-signed-delivery.zip
           if-no-files-found: error
           retention-days: 30
@@ -311,15 +311,15 @@ jobs:
         env:
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          APK="dist/VYRA-YouTube-21.30.217.apk"
+          APK="dist/VYRA-YouTube-21.30.218.apk"
           test -s "$APK"
           SHA256="$(sha256sum "$APK" | awk '{print $1}')"
           SIZE="$(stat -c%s "$APK")"
-          APK_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vyra-build-$BUILD_NUMBER/VYRA-YouTube-21.30.217.apk"
+          APK_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vyra-build-$BUILD_NUMBER/VYRA-YouTube-21.30.218.apk"
           PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           cat > dist/update-manifest.json <<EOF
           {
-            "version": "21.30.217+vyra.$BUILD_NUMBER",
+            "version": "21.30.218+vyra.$BUILD_NUMBER",
             "build_number": $BUILD_NUMBER,
             "package_name": "app.vyra.youtube",
             "apk_url": "$APK_URL",
@@ -345,7 +345,7 @@ jobs:
             fi
           fi
           gh release create "vyra-build-$BUILD_NUMBER" \
-            "dist/VYRA-YouTube-21.30.217.apk#VYRA YouTube APK" \
+            "dist/VYRA-YouTube-21.30.218.apk#VYRA YouTube APK" \
             "dist/update-manifest.json#VYRA Update Manifest" \
             --title "VYRA YouTube build $BUILD_NUMBER" \
             --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER." \

@@ -2,15 +2,17 @@ name: Build VYRA patch bundle
 
 on:
   push:
-    branches: [main, vyra-apk-build-verification]
-    paths-ignore: ['patches-bundle.json', 'build-status.json']
-  pull_request:
-    branches: [main]
+    branches: [main, vyra-apk-build-verification, vyra-apk-final-build]
+    paths-ignore: ['patches-bundle.json', 'build-status.json', 'updater/update-manifest.json', 'updater/update-status.json', '.github/workflows/build-patch-bundle.yml']
   workflow_dispatch:
 
 permissions:
   contents: write
   packages: read
+
+concurrency:
+  group: vyra-youtube-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-overlay:
@@ -33,6 +35,8 @@ jobs:
           path: vyra-youtube
       - name: Apply and validate VYRA overlay
         working-directory: morphe-patches
+        env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
         run: |
           python3 -m py_compile ../vyra-youtube/patches/apply_vyra_youtube_overlay.py ../vyra-youtube/patches/generate_vyra_splash.py
           python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
@@ -40,10 +44,10 @@ jobs:
           grep -q 'VYRA Liquid Glass Splash' patches/src/main/resources/custom-branding/raw/vyra_startup_animation.json
           git diff --check
           grep -q 'SwitchPreference("morphe_navigation_bar_glass"' patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt
-          grep -q 'morphe_navigation_bar_animations", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_animations", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_opacity", 14' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'morphe_navigation_bar_glass_round", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
-          grep -q 'morphe_navigation_bar_glass", TRUE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
+          grep -q 'morphe_navigation_bar_glass", FALSE' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
           grep -q 'Settings.VYRA_GLASS_MODE.get()' extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/YouTubeGlassNavigationBar.java
           grep -q 'vyra_glass_mode' patches/src/main/kotlin/app/morphe/patches/youtube/misc/settings/SettingsPatch.kt
           grep -q 'NavigationBarStyle.DEFAULT' extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java
@@ -114,6 +118,8 @@ jobs:
           PY
       - name: Apply VYRA overlay
         working-directory: morphe-patches
+        env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
         run: python3 ../vyra-youtube/patches/apply_vyra_youtube_overlay.py
       - name: Build Android patch bundle
         working-directory: morphe-patches
@@ -168,21 +174,13 @@ jobs:
           "$AAPT" dump badging stock-youtube.apk | head -1 | tee stock-package-info.txt
           grep -q "com.google.android.youtube" stock-package-info.txt
           grep -q "21.30.216" stock-package-info.txt
-      - name: Check out current Morphe Desktop source
-        uses: actions/checkout@v4
-        with:
-          repository: MorpheApp/morphe-desktop
-          ref: main
-          path: morphe-desktop-source
-      - name: Build compatible Morphe CLI from source
-        working-directory: morphe-desktop-source
+      - name: Download released Morphe CLI
         run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon shadowJar
-          MORPHE_JAR="$(find build/libs -maxdepth 1 -type f -name '*all.jar' -print -quit)"
-          test -n "$MORPHE_JAR"
-          java -jar "$MORPHE_JAR" --help
-          cp "$MORPHE_JAR" ../morphe-desktop.jar
+          curl -fL --retry 3 --connect-timeout 20 --max-time 240 \
+            "https://github.com/MorpheApp/morphe-desktop/releases/download/v2.2.0/morphe-desktop-2.2.0-all.jar" \
+            -o morphe-desktop.jar
+          echo "5ca0320ee05481df1ae3afd2f003bba3ff994d11d1f66ae48811ced71355e4fe  morphe-desktop.jar" | sha256sum -c -
+          java -jar morphe-desktop.jar --help >/dev/null
       - name: Prepare adaptive VYRA launcher icon
         run: |
           python - <<'PY'
@@ -218,7 +216,28 @@ jobs:
           test -n "$PATCHES"
           java -jar morphe-desktop.jar list-patches --patches "$PATCHES" -f com.google.android.youtube --with-options | tee patch-list.txt
       - name: Patch and sign VYRA YouTube
+        env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
+          VYRA_KEYSTORE_BASE64: ${{ secrets.VYRA_KEYSTORE_BASE64 }}
+          VYRA_KEYSTORE_PASSWORD: ${{ secrets.VYRA_KEYSTORE_PASSWORD }}
+          VYRA_KEY_ALIAS: ${{ secrets.VYRA_KEY_ALIAS }}
+          VYRA_KEY_PASSWORD: ${{ secrets.VYRA_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          test -n "$VYRA_KEYSTORE_BASE64"
+          test -n "$VYRA_KEYSTORE_PASSWORD"
+          test -n "$VYRA_KEY_ALIAS"
+          test -n "$VYRA_KEY_PASSWORD"
+          KEYSTORE="$RUNNER_TEMP/vyra-release.keystore"
+          printf '%s' "$VYRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -v -keystore "$KEYSTORE" -storepass "$VYRA_KEYSTORE_PASSWORD" -alias "$VYRA_KEY_ALIAS" > vyra-keystore-info.txt
+          EXPECTED_CERT_SHA256="$(awk -F': ' '/SHA256:/{print $2; exit}' vyra-keystore-info.txt | tr -d ':' | tr 'A-F' 'a-f')"
+          if ! [[ "$EXPECTED_CERT_SHA256" =~ ^[A-Fa-f0-9]{64}$ ]]; then
+            echo "Could not read the VYRA keystore SHA-256 certificate fingerprint."
+            exit 1
+          fi
+          printf '%s\n' "$EXPECTED_CERT_SHA256" > expected-cert-sha256.txt
           PATCHES="$(find dist/patches -name '*.mpp' -print -quit)"
           java -jar morphe-desktop.jar patch \
             --patches "$PATCHES" \
@@ -226,61 +245,139 @@ jobs:
             --options "packageName=app.vyra.youtube" \
             --options "updatePermissions=true" \
             --options "updateProviders=true" \
+            --enable "Custom branding" \
             --options "customName=VYRA YouTube" \
             --options "customIcon=$GITHUB_WORKSPACE/vyra-icon" \
+            --options "appIcon=Custom" \
+            --keystore "$KEYSTORE" \
+            --keystore-password "$VYRA_KEYSTORE_PASSWORD" \
+            --keystore-entry-alias "$VYRA_KEY_ALIAS" \
+            --keystore-entry-password "$VYRA_KEY_PASSWORD" \
             --signer "VYRA Project" \
-            --out "VYRA-YouTube-21.30.216.apk" \
-            --striplibs arm64-v8a \
+            --out "VYRA-YouTube-21.30.218.apk" \
             --result-file "patch-result.json" \
             "stock-youtube.apk"
           jq -e '.success == true and (.failedPatches | length) == 0' patch-result.json >/dev/null
-          test -s "VYRA-YouTube-21.30.216.apk"
+          test -s "VYRA-YouTube-21.30.218.apk"
       - name: Verify APK signature and package
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
+          set -euo pipefail
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
-          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.216.apk" | tee output-signature.txt
+          "$APKSIGNER" verify --verbose --print-certs "VYRA-YouTube-21.30.218.apk" | tee output-signature.txt
+          EXPECTED_CERT_SHA256="$(cat expected-cert-sha256.txt)"
+          grep -qi "$EXPECTED_CERT_SHA256" output-signature.txt
+          if [ "$EXPECTED_CERT_SHA256" = "7cdb3134b740c64fd37628a8b9f8fbf5aef6e65267719098741a5ff858c94d92" ]; then
+            echo "Signing certificate matches the previously delivered APK." > signing-migration.txt
+          else
+            echo "Signing key changed from the previously delivered APK. Uninstall the old VYRA YouTube once, install this APK, then future in-app updates will work." > signing-migration.txt
+          fi
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
-          "$AAPT" dump badging "VYRA-YouTube-21.30.216.apk" | tee package-info.txt
+          "$AAPT" dump badging "VYRA-YouTube-21.30.218.apk" | tee package-info.txt
           grep -q "name='app.vyra.youtube'" package-info.txt
+          grep -q "versionName='21.30.218'" package-info.txt
+          EXPECTED_VERSION_CODE=$((1561187872 + BUILD_NUMBER - 203))
+          grep -q "versionCode='$EXPECTED_VERSION_CODE'" package-info.txt
           grep -q "application-label:'VYRA YouTube'" package-info.txt
       - name: Prepare signed VYRA delivery
         run: |
           zip -j vyra-youtube-signed-delivery.zip \
-            "VYRA-YouTube-21.30.216.apk" \
-            patch-result.json package-info.txt patch-list.txt
+            "VYRA-YouTube-21.30.218.apk" \
+            patch-result.json package-info.txt patch-list.txt output-signature.txt signing-migration.txt
       - uses: actions/upload-artifact@v4
         with:
           name: vyra-youtube-signed-apk
           path: |
-            VYRA-YouTube-21.30.216.apk
+            VYRA-YouTube-21.30.218.apk
             vyra-youtube-signed-delivery.zip
           if-no-files-found: error
           retention-days: 30
 
-  publish-status:
+  publish-release:
     needs: [validate-overlay, build-mpp, build-apk]
+    if: github.event_name == 'push' && needs.validate-overlay.result == 'success' && needs.build-mpp.result == 'success' && needs.build-apk.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: vyra-youtube-signed-apk
+          path: dist
+      - name: Prepare verified update manifest
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          APK="dist/VYRA-YouTube-21.30.218.apk"
+          test -s "$APK"
+          SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          SIZE="$(stat -c%s "$APK")"
+          APK_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vyra-build-$BUILD_NUMBER/VYRA-YouTube-21.30.218.apk"
+          PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cat > dist/update-manifest.json <<EOF
+          {
+            "version": "21.30.218+vyra.$BUILD_NUMBER",
+            "build_number": $BUILD_NUMBER,
+            "package_name": "app.vyra.youtube",
+            "apk_url": "$APK_URL",
+            "sha256": "$SHA256",
+            "size_bytes": $SIZE,
+            "published_at": "$PUBLISHED_AT",
+            "release_notes": "VYRA YouTube build $BUILD_NUMBER"
+          }
+          EOF
+          python3 -m json.tool dist/update-manifest.json >/dev/null
+          jq -e --argjson build "$BUILD_NUMBER" '.build_number == $build and .package_name == "app.vyra.youtube" and (.sha256 | test("^[a-f0-9]{64}$")) and (.size_bytes > 0)' dist/update-manifest.json >/dev/null
+      - name: Publish signed APK and update manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          LATEST_TAG="$(gh release list --limit 100 --json tagName --jq '[.[] | select(.tagName | startswith("vyra-build-"))][0].tagName // empty')"
+          if [ -n "$LATEST_TAG" ]; then
+            LATEST_BUILD="${LATEST_TAG#vyra-build-}"
+            if [ "$LATEST_BUILD" -ge "$BUILD_NUMBER" ]; then
+              echo "A newer or equal VYRA release already exists ($LATEST_TAG); skipping stale build $BUILD_NUMBER."
+              exit 0
+            fi
+          fi
+          gh release create "vyra-build-$BUILD_NUMBER" \
+            "dist/VYRA-YouTube-21.30.218.apk#VYRA YouTube APK" \
+            "dist/update-manifest.json#VYRA Update Manifest" \
+            --title "VYRA YouTube build $BUILD_NUMBER" \
+            --notes "Signed VYRA YouTube APK. Build number: $BUILD_NUMBER." \
+            --latest
+
+  publish-status:
+    needs: [validate-overlay, build-mpp, build-apk, publish-release]
     if: always() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ github.token }}
       - name: Publish final build status
         env:
           VALIDATION_RESULT: ${{ needs.validate-overlay.result }}
           BUILD_RESULT: ${{ needs.build-mpp.result }}
           APK_RESULT: ${{ needs.build-apk.result }}
+          RELEASE_RESULT: ${{ needs.publish-release.result }}
           BUILD_RUN_ID: ${{ github.run_id }}
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           if [ "$VALIDATION_RESULT" = "success" ] && [ "$BUILD_RESULT" = "success" ]; then RESULT=success; else RESULT=failure; fi
           if [ "$RESULT" = "success" ] && [ "$APK_RESULT" != "success" ]; then RESULT=failure; fi
-          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
+          if [ "$RESULT" = "success" ] && [ "$RELEASE_RESULT" != "success" ]; then RESULT=failure; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin "$GITHUB_REF_NAME"
+          git pull --rebase origin "$TARGET_BRANCH"
+          printf '{"run_id":%s,"status":"%s","validation":"%s","build":"%s","apk":"%s","url":"%s","commit":"%s"}\n' "$BUILD_RUN_ID" "$RESULT" "$VALIDATION_RESULT" "$BUILD_RESULT" "$APK_RESULT" "$BUILD_RUN_URL" "$GITHUB_SHA" > build-status.json
           git add build-status.json
           git commit -m "Record VYRA patch build status [skip ci]" || exit 0
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin "HEAD:$TARGET_BRANCH"

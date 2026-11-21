@@ -26,7 +26,7 @@ class MainActivity : Activity() {
     private var verifiedApk: File? = null
     private val statusUrl = "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/main/updater/update-status.json"
     private val manifestUrl = "https://raw.githubusercontent.com/mm2ultimatehub-rgb/VYRA-YOUTUBE/main/updater/update-manifest.json"
-    private val expectedPackage = "com.google.android.youtube"
+    private val expectedPackage = "app.vyra.youtube"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

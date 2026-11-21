@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import re
+import os
 
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
@@ -24,6 +25,7 @@ SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
 SPLASH_STRINGS = ROOT / "patches/src/main/resources/addresources/values/shared-youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
+CLONE_APP_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/all/misc/clone/CloneAppPatch.kt"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
 EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
@@ -37,9 +39,25 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, EXTENSION_GLASS_NAV, PLAYER_PATCH):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, CLONE_APP_PATCH, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, EXTENSION_GLASS_NAV, PLAYER_PATCH):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
+
+# VYRA version override is applied to the cloned APK manifest during patching.
+# VYRA version override is applied to the cloned APK manifest during patching.
+clone_source = CLONE_APP_PATCH.read_text(encoding="utf-8")
+clone_anchor = '            manifest.root.setAttribute("package", newPackageName)'
+if clone_source.count(clone_anchor) != 1:
+    fail("Clone app manifest version anchor changed")
+clone_source = clone_source.replace(
+    clone_anchor,
+    clone_anchor + """\n            val vyraBuildNumber = System.getenv("VYRA_BUILD_NUMBER")?.toIntOrNull()
+                ?: error("VYRA_BUILD_NUMBER is required for VYRA versioning")
+            manifest.root.setAttribute("android:versionName", "21.30.218")
+            manifest.root.setAttribute("android:versionCode", (1561187872L + vyraBuildNumber - 203L).toString())""",
+    1,
+)
+CLONE_APP_PATCH.write_text(clone_source, encoding="utf-8")
 
 # Keep the native YouTube splash hook, but strip the newer Rive-only branch.
 # The VYRA animation is a self-contained Lottie composition supported by 21.30.216.

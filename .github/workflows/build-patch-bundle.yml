@@ -217,6 +217,7 @@ jobs:
           java -jar morphe-desktop.jar list-patches --patches "$PATCHES" -f com.google.android.youtube --with-options | tee patch-list.txt
       - name: Patch and sign VYRA YouTube
         env:
+          VYRA_BUILD_NUMBER: ${{ github.run_number }}
           VYRA_KEYSTORE_BASE64: ${{ secrets.VYRA_KEYSTORE_BASE64 }}
           VYRA_KEYSTORE_PASSWORD: ${{ secrets.VYRA_KEYSTORE_PASSWORD }}
           VYRA_KEY_ALIAS: ${{ secrets.VYRA_KEY_ALIAS }}

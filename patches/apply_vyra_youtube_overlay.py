@@ -44,7 +44,6 @@ for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, G
         fail(f"missing pinned upstream file: {path}")
 
 # VYRA version override is applied to the cloned APK manifest during patching.
-# VYRA version override is applied to the cloned APK manifest during patching.
 clone_source = CLONE_APP_PATCH.read_text(encoding="utf-8")
 clone_anchor = '            manifest.root.setAttribute("package", newPackageName)'
 if clone_source.count(clone_anchor) != 1:

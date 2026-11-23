@@ -48,10 +48,14 @@ clone_source = CLONE_APP_PATCH.read_text(encoding="utf-8")
 clone_anchor = '            manifest.root.setAttribute("package", newPackageName)'
 if clone_source.count(clone_anchor) != 1:
     fail("Clone app manifest version anchor changed")
+build_number = os.environ.get("VYRA_BUILD_NUMBER", "").strip()
+if not build_number.isdigit() or int(build_number) <= 0:
+    fail("VYRA_BUILD_NUMBER must be provided by the build workflow")
+# Bake the CI build number into the patch source. The patcher executes in its own
+# runtime, so relying on its process environment is not reliable.
 clone_source = clone_source.replace(
     clone_anchor,
-    clone_anchor + """\n            val vyraBuildNumber = System.getenv("VYRA_BUILD_NUMBER")?.toIntOrNull()
-                ?: error("VYRA_BUILD_NUMBER is required for VYRA versioning")
+    clone_anchor + f"""\n            val vyraBuildNumber = {int(build_number)}
             manifest.root.setAttribute("android:versionName", "21.30.218")
             manifest.root.setAttribute("android:versionCode", (1561187872L + vyraBuildNumber - 203L).toString())""",
     1,
@@ -284,7 +288,6 @@ glass_nav_source = EXTENSION_GLASS_NAV.read_text(encoding="utf-8")
 glass_enabled_anchor = """    private static final boolean ENABLED = Settings.NAVIGATION_BAR_GLASS.get()
             && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
 glass_enabled_replacement = """    private static final boolean ENABLED = Settings.VYRA_GLASS_MODE.get()
-            && Settings.NAVIGATION_BAR_GLASS.get()
             && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
 if glass_nav_source.count(glass_enabled_anchor) != 1:
     fail("VYRA global glass navigation gate anchor changed")

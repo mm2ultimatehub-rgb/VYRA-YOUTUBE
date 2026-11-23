@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Apply the pinned VYRA settings overlay to a Morphe Patches checkout.
+Safe-baseline builds intentionally stop after package/version injection.
 
 This deliberately edits only checked upstream anchors. If upstream changes,
 fail closed rather than silently producing a partial patch.

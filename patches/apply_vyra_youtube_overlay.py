@@ -62,6 +62,12 @@ clone_source = clone_source.replace(
 )
 CLONE_APP_PATCH.write_text(clone_source, encoding="utf-8")
 
+# Diagnostic baseline: retain only safe clone/package/version handling.
+# Skip all VYRA startup, navigation, player, Shorts and custom settings hooks.
+if os.environ.get("VYRA_SAFE_BASELINE", "").strip() == "1":
+    print("VYRA safe baseline enabled: custom runtime overlay hooks are disabled.")
+    raise SystemExit(0)
+
 # Keep the native YouTube splash hook, but strip the newer Rive-only branch.
 # The VYRA animation is a self-contained Lottie composition supported by 21.30.216.
 branding = BRANDING.read_text(encoding="utf-8")

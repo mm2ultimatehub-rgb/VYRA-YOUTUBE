@@ -10,6 +10,10 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 - The supplied splash direction is an 8-second black/silver animation: glass V descends, a thin circular light ring appears, spaced VYRA lettering fades in, and a thin loading line completes.
 
 ## Current implementation
+
+### Stability defaults
+- VYRA splash animation and custom Glass rendering are opt-in until validated on physical Android devices.
+- The APK keeps all supported native ABIs; no ABI is stripped during packaging.
 - VYRA patch overlay is applied to pinned Morphe Patches source.
 - Root settings branding is renamed to VYRA MOD.
 - The VYRA MOD root organizes the existing General, Feed, Player, and Shorts settings categories as **VYRA Appearance**, **VYRA Home & Feed**, **VYRA Player**, and **VYRA Shorts**.
@@ -55,8 +59,9 @@ A VYRA-branded visual customization layer for YouTube Android, built on a pinned
 
 See [the roadmap](docs/ROADMAP.md) for the remaining implementation and verification work.
 
-## VYRA updater status
-- The updater UI, manifest schema, and Android bridge contract are in `updater/`.
-- The native Android downloader/installer is not implemented in this repository because there is no Android application module here yet.
-- Current automated releases publish `.mpp` patch bundles only. These are not APKs and must never be passed to Android's package installer.
-- APK installation must wait for native size/SHA-256/package/signature verification and Android's user-confirmed package installer flow.
+## VYRA in-app updater
+- A native **VYRA Updates** screen is integrated into the patched YouTube extension and uses the bundled liquid-glass progress UI.
+- The updater checks the VYRA build number, downloads only over HTTPS, verifies exact byte size and SHA-256, checks the package ID and signing-certificate continuity, then opens Android's package installer through a scoped FileProvider URI.
+- Android still requires the user to confirm installation. The first APK that contains this updater must be installed manually once; later VYRA releases can be downloaded from inside YouTube.
+- GitHub Actions is configured to publish a signed APK release and its update manifest only after the build and signing checks succeed.
+- A real-device install, launch, and in-app update smoke test is still required before runtime behavior can be marked verified.

@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "version",
+    "build_number",
     "package_name",
     "apk_url",
     "sha256",
@@ -17,8 +18,12 @@
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
     },
+    "build_number": {
+      "type": "integer",
+      "minimum": 1
+    },
     "package_name": {
-      "const": "com.google.android.youtube"
+      "const": "app.vyra.youtube"
     },
     "min_app_version": {
       "type": "string"

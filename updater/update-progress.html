@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>V Sıvı Cam Akıcı Yükleme</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   /* Obsidian ve buzlu cam tasarım değişkenleri */
   :root {
@@ -34,16 +31,6 @@
     --orb-1: rgba(56, 189, 248, 0.21);
     --orb-2: rgba(129, 140, 248, 0.22);
     --orb-3: rgba(186, 230, 253, 0.12);
-  }
-
-  /* Zümrüt cam teması */
-  [data-theme="emerald"] {
-    --accent: #86efac;
-    --accent-rgb: 134, 239, 172;
-    --accent-glow: rgba(74, 222, 128, 0.40);
-    --orb-1: rgba(52, 211, 153, 0.19);
-    --orb-2: rgba(45, 212, 191, 0.19);
-    --orb-3: rgba(167, 243, 208, 0.11);
   }
 
   * {
@@ -651,18 +638,13 @@
     <p class="mb" id="mb">0,0 / 48,0 MB</p>
     <p class="telemetry" id="telemetry">0,0 MB/s · Süre hesaplanıyor</p>
 
-    <div class="toolbar" role="group" aria-label="Tema ve hız seçenekleri">
+    <div class="toolbar" role="group" aria-label="Tema seçenekleri">
       <button type="button" class="pill active" data-theme-btn="obsidian">
         <span class="swatch" style="background:#ffffff"></span>Saf Cam
       </button>
       <button type="button" class="pill" data-theme-btn="ice">
         <span class="swatch" style="background:#7dd3fc"></span>Buz
       </button>
-      <button type="button" class="pill" data-theme-btn="emerald">
-        <span class="swatch" style="background:#6ee7b7"></span>Zümrüt
-      </button>
-      <span class="sep" aria-hidden="true"></span>
-      <button type="button" class="pill" id="speedBtn" aria-pressed="false">1× Hız</button>
     </div>
 
     <button type="button" class="re" id="re" disabled>İndirme bekleniyor</button>
@@ -683,7 +665,6 @@
   const mbEl = document.getElementById('mb');
   const telEl = document.getElementById('telemetry');
   const reBtn = document.getElementById('re');
-  const speedBtn = document.getElementById('speedBtn');
   const ticksG = document.getElementById('ticks');
   const themeBtns = Array.from(document.querySelectorAll('[data-theme-btn]'));
 
@@ -1202,14 +1183,6 @@
         document.documentElement.setAttribute('data-theme', theme);
       }
     });
-  });
-
-  // Hız anahtarı (1x / 2x)
-  speedBtn.addEventListener('click', () => {
-    state.speedMult = state.speedMult === 1 ? 2 : 1;
-    speedBtn.textContent = `${state.speedMult}× Hız`;
-    speedBtn.classList.toggle('active', state.speedMult === 2);
-    speedBtn.setAttribute('aria-pressed', String(state.speedMult === 2));
   });
 
   // İmleç eğimine göre 3B küre eğimi ve kayan cam parlama

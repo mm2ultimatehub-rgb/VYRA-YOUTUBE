@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Apply the pinned VYRA settings overlay to a Morphe Patches checkout.
+Safe-baseline builds intentionally stop after package/version injection.
 
 This deliberately edits only checked upstream anchors. If upstream changes,
 fail closed rather than silently producing a partial patch.
@@ -9,6 +10,8 @@ import sys
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
+import re
+import os
 
 ROOT = Path.cwd()
 NAV = ROOT / "patches/src/main/kotlin/app/morphe/patches/youtube/layout/buttons/navigation/NavigationBarPatch.kt"
@@ -23,6 +26,7 @@ SETTINGS_LOGO = ROOT / "patches/src/main/resources/settings/drawable/vyra_glass_
 YOUTUBE_STRINGS = ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml"
 SPLASH_STRINGS = ROOT / "patches/src/main/resources/addresources/values/shared-youtube/strings.xml"
 PATCH_BUILD = ROOT / "patches/build.gradle.kts"
+CLONE_APP_PATCH = ROOT / "patches/src/main/kotlin/app/morphe/patches/all/misc/clone/CloneAppPatch.kt"
 EXTENSION_SETTINGS = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/settings/Settings.java"
 EXTENSION_NAVIGATION = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/NavigationBarPatch.java"
 EXTENSION_THEME = ROOT / "extensions/youtube/src/main/java/app/morphe/extension/youtube/patches/theme/ThemePatch.java"
@@ -36,9 +40,34 @@ def fail(message: str) -> None:
     print(f"VYRA overlay error: {message}", file=sys.stderr)
     raise SystemExit(2)
 
-for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, EXTENSION_GLASS_NAV, PLAYER_PATCH):
+for path in (NAV, SETTINGS, BRANDING, SEEKBAR, SPLASH_PATCH, SPLASH_RESOURCES, GLOW_RESOURCES, YOUTUBE_STRINGS, SPLASH_STRINGS, PATCH_BUILD, CLONE_APP_PATCH, EXTENSION_SETTINGS, EXTENSION_NAVIGATION, EXTENSION_THEME, EXTENSION_WIDE_SEARCH, EXTENSION_PLAYER, EXTENSION_GLASS_NAV, PLAYER_PATCH):
     if not path.is_file():
         fail(f"missing pinned upstream file: {path}")
+
+# VYRA version override is applied to the cloned APK manifest during patching.
+clone_source = CLONE_APP_PATCH.read_text(encoding="utf-8")
+clone_anchor = '            manifest.root.setAttribute("package", newPackageName)'
+if clone_source.count(clone_anchor) != 1:
+    fail("Clone app manifest version anchor changed")
+build_number = os.environ.get("VYRA_BUILD_NUMBER", "").strip()
+if not build_number.isdigit() or int(build_number) <= 0:
+    fail("VYRA_BUILD_NUMBER must be provided by the build workflow")
+# Bake the CI build number into the patch source. The patcher executes in its own
+# runtime, so relying on its process environment is not reliable.
+clone_source = clone_source.replace(
+    clone_anchor,
+    clone_anchor + f"""\n            val vyraBuildNumber = {int(build_number)}
+            manifest.root.setAttribute("android:versionName", "21.30.218")
+            manifest.root.setAttribute("android:versionCode", (1561187872L + vyraBuildNumber - 203L).toString())""",
+    1,
+)
+CLONE_APP_PATCH.write_text(clone_source, encoding="utf-8")
+
+# Diagnostic baseline: retain only safe clone/package/version handling.
+# Skip all VYRA startup, navigation, player, Shorts and custom settings hooks.
+if os.environ.get("VYRA_SAFE_BASELINE", "").strip() == "1":
+    print("VYRA safe baseline enabled: custom runtime overlay hooks are disabled.")
+    raise SystemExit(0)
 
 # Keep the native YouTube splash hook, but strip the newer Rive-only branch.
 # The VYRA animation is a self-contained Lottie composition supported by 21.30.216.
@@ -133,7 +162,7 @@ for filename, content in (
 extension_settings = EXTENSION_SETTINGS.read_text(encoding="utf-8")
 setting_defaults = {
     'new BooleanSetting("morphe_navigation_bar_animations", FALSE, parentNot(HIDE_NAVIGATION_BAR))':
-        'new BooleanSetting("morphe_navigation_bar_animations", TRUE, parentNot(HIDE_NAVIGATION_BAR))',
+        'new BooleanSetting("morphe_navigation_bar_animations", FALSE, parentNot(HIDE_NAVIGATION_BAR))',
     'new IntegerSetting("morphe_navigation_bar_glass_opacity", 20, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
         'new IntegerSetting("morphe_navigation_bar_glass_opacity", 14, true, parentsAll(parent(NAVIGATION_BAR_GLASS)',
     'new BooleanSetting("morphe_navigation_bar_glass_round", FALSE, true, parentsAll(parent(NAVIGATION_BAR_GLASS)':
@@ -143,18 +172,18 @@ for old, new in setting_defaults.items():
     if extension_settings.count(old) != 1:
         fail(f"expected exactly one VYRA navigation default anchor: {old}")
     extension_settings = extension_settings.replace(old, new, 1)
-# Enable the Glass capsule by default; the VYRA master switch can disable it globally.
+# Keep the Glass capsule opt-in until the custom renderer is device-tested.
 old_nav_glass = 'public static final BooleanSetting NAVIGATION_BAR_GLASS = new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(parentNot(HIDE_NAVIGATION_BAR), new GlassAvailability()));'
-new_nav_glass = old_nav_glass.replace(", FALSE,", ", TRUE,")
+new_nav_glass = old_nav_glass.replace(", FALSE,", ", FALSE,")
 if extension_settings.count(old_nav_glass) != 1:
     fail("VYRA navigation glass default anchor changed")
 extension_settings = extension_settings.replace(old_nav_glass, new_nav_glass, 1)
 glass_master_anchor = new_nav_glass
 if extension_settings.count(glass_master_anchor) != 1:
     fail("VYRA glass master setting insertion anchor changed")
-extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", true, true);', 1)
-if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", TRUE, true, parentsAll(') != 1:
-    fail("VYRA must enable Glass by default")
+extension_settings = extension_settings.replace(glass_master_anchor, glass_master_anchor + '\n    public static final BooleanSetting VYRA_GLASS_MODE = new BooleanSetting("vyra_glass_mode", false, true);', 1)
+if extension_settings.count('new BooleanSetting("morphe_navigation_bar_glass", FALSE, true, parentsAll(') != 1:
+    fail("VYRA must keep Glass opt-in by default")
 if extension_settings.count('new EnumSetting<>("morphe_navigation_bar_style", NavigationBarStyle.DEFAULT') != 1:
     fail("VYRA must preserve the upstream default navigation style")
 splash_setting_anchor = new_nav_glass
@@ -162,7 +191,7 @@ if extension_settings.count(splash_setting_anchor) != 1:
     fail("VYRA splash setting insertion anchor changed")
 extension_settings = extension_settings.replace(
     splash_setting_anchor,
-    splash_setting_anchor + '\n    public static final BooleanSetting VYRA_SPLASH_SCREEN = new BooleanSetting("vyra_splash_screen", TRUE, true);',
+    splash_setting_anchor + '\n    public static final BooleanSetting VYRA_SPLASH_SCREEN = new BooleanSetting("vyra_splash_screen", FALSE, true);',
     1
 )
 
@@ -266,7 +295,6 @@ glass_nav_source = EXTENSION_GLASS_NAV.read_text(encoding="utf-8")
 glass_enabled_anchor = """    private static final boolean ENABLED = Settings.NAVIGATION_BAR_GLASS.get()
             && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
 glass_enabled_replacement = """    private static final boolean ENABLED = Settings.VYRA_GLASS_MODE.get()
-            && Settings.NAVIGATION_BAR_GLASS.get()
             && Settings.NAVIGATION_BAR_STYLE.get() != NavigationBarStyle.OPAQUE"""
 if glass_nav_source.count(glass_enabled_anchor) != 1:
     fail("VYRA global glass navigation gate anchor changed")
@@ -622,6 +650,55 @@ for key, value in (
 YOUTUBE_STRINGS.write_text(xml, encoding="utf-8")
 ET.parse(YOUTUBE_STRINGS)
 
+# Remove upstream brand references from user-visible settings text while keeping
+# internal resource keys, Java package names, license notices and attribution intact.
+BRAND_STRING_FILES = (
+    ROOT / "patches/src/main/resources/addresources/values/shared/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values/shared-youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values/youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/shared/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/shared-youtube/strings.xml",
+    ROOT / "patches/src/main/resources/addresources/values-tr-rTR/youtube/strings.xml",
+)
+
+def rebrand_string_values(path: Path) -> None:
+    if not path.is_file():
+        fail(f"missing localized VYRA string resource: {path}")
+    content = path.read_text(encoding="utf-8")
+    def replace_value(match):
+        value = match.group(2)
+        value = value.replace("Morphe", "VYRA")
+        value = value.replace("morphe.software/translate", "github.com/mm2ultimatehub-rgb/VYRA-YOUTUBE")
+        return match.group(1) + value + match.group(3)
+    updated = re.sub(r'(<string\b[^>]*>)(.*?)(</string>)', replace_value, content, flags=re.DOTALL)
+    updated = re.sub(r'(?m)^([^\n]*VYRA[^\n]*?)[ \t]+$', r'\1', updated)
+    path.write_text(updated, encoding="utf-8")
+    ET.parse(path)
+    if re.search(r'<string\b[^>]*>[^<]*Morphe', updated):
+        fail(f"user-visible Morphe brand text remains in {path}")
+
+for resource in BRAND_STRING_FILES:
+    rebrand_string_values(resource)
+
+# Explicit Turkish labels for the VYRA-owned settings screens.
+TR_YOUTUBE_STRINGS = BRAND_STRING_FILES[-1]
+tr_xml = TR_YOUTUBE_STRINGS.read_text(encoding="utf-8")
+for key, value in (
+    ("vyra_settings_title", "VYRA MOD"),
+    ("vyra_appearance_title", "VYRA Görünüm"),
+    ("vyra_splash_screen_title", "VYRA açılış ekranı"),
+    ("vyra_splash_screen_summary", "YouTube açılırken VYRA sıvı cam animasyonunu oynat"),
+    ("vyra_glass_mode_title", "VYRA Sıvı Cam"),
+    ("vyra_glass_mode_summary", "Desteklenen YouTube alanlarına ve oynatıcı denetimlerine VYRA cam görünümünü uygula"),
+    ("vyra_feed_title", "VYRA Ana Sayfa ve Akış"),
+    ("vyra_player_title", "VYRA Oynatıcı"),
+    ("vyra_shorts_title", "VYRA Shorts"),
+):
+    if f'name="{key}"' not in tr_xml:
+        tr_xml = tr_xml.replace("</resources>", f'  <string name="{key}">{value}</string>\n</resources>', 1)
+TR_YOUTUBE_STRINGS.write_text(tr_xml, encoding="utf-8")
+ET.parse(TR_YOUTUBE_STRINGS)
+
 build_script = PATCH_BUILD.read_text(encoding="utf-8")
 metadata_replacements = {
     'name = "Morphe Patches"': 'name = "VYRA YouTube Patches"',
@@ -634,4 +711,9 @@ for old, new in metadata_replacements.items():
         fail(f"expected exactly one patch bundle metadata anchor: {old}")
     build_script = build_script.replace(old, new, 1)
 PATCH_BUILD.write_text(build_script, encoding="utf-8")
-print("VYRA overlay applied: settings, Glass navigation, native splash hook and dedicated VYRA Lottie resource are wired.")
+updater_integrator = ROOT.parent / "vyra-youtube/patches/integrate_vyra_updater.py"
+if not updater_integrator.is_file():
+    fail(f"missing VYRA updater integration script: {updater_integrator}")
+subprocess.run([sys.executable, str(updater_integrator), str(ROOT), str(ROOT.parent / "vyra-youtube")], check=True)
+
+print("VYRA overlay applied: settings, Glass navigation, native splash, VYRA branding and in-app updater are wired.")
